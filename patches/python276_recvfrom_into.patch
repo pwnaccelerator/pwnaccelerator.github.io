@@ -1,0 +1,18 @@
+*** /tmp/sock.c	2014-02-25 13:12:52.114688492 +0100
+--- work/Python-2.7.6/Modules/socketmodule.c	2014-02-25 13:28:20.524695720 +0100
+***************
+*** 2739,2744 ****
+--- 2739,2751 ----
+                          "negative buffersize in recvfrom_into");
+          goto error;
+      }
++     
++     if (recvlen > buflen) {
++         PyErr_SetString(PyExc_ValueError,
++                         "insufficient buffersize in recvfrom_into");
++         goto error;
++     }
++ 
+      if (recvlen == 0) {
+          /* If nbytes was not specified, use the buffer's length */
+          recvlen = buflen;
