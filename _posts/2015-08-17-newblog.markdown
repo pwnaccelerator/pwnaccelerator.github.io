@@ -1,0 +1,8 @@
+---
+layout: post
+title: "New Blog"
+date: 2015-08-17
+categories: blog
+---
+
+So I started a new blog using proper Jekyll here. Expect some more posts in the future. ;-)
