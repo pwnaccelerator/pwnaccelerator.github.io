@@ -10,7 +10,7 @@ categories: blog
 So as you might have already learned Google messed up their patching leaving
 your Android device still vulnerable to nasty integer overflow vulnerabilities.
 Several blogposts already discussed this such as the ones from [Exodus][exodus-sf],
-[Fortigate][fortigate-sf] and there is a new CVE identifier CVE-2015-3864 adressing
+[Fortigate][fortigate-sf] and Zimperium. There is a new CVE identifier CVE-2015-3864 adressing
 this.
 
 Despite being fixed in the AOSP repositories until today I did not see any OTA patch
