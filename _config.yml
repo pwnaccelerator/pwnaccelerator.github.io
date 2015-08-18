@@ -9,5 +9,5 @@ twitter_username: marver
 github_username:  pwnaccelerator
 
 # Build settings
-markdown: kramdown
+markdown: redcarpet
 permalink: /:year/:title:output_ext
