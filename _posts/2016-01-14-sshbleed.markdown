@@ -1,13 +1,13 @@
 ---
 layout: post
 title: "SSHBleed - Initial Analysis"
-date: 2015-08-17
+date: 2016-01-14
 categories: blog
 ---
 
 **DISCLAIMER: This is a quick analysis based on a good amount of speculation and looking very quickly at some amount of unknown code. This is a 30 minute writedown and not a code audit! Take it with a grain of salt and correct me if I'm wrong.**
 
-On 2015-01-15 (his time) Damien Miller made a scary [announcement][announcement] on the OpenSSH development list.
+On 2015-01-14 (his time) Damien Miller made a scary [announcement][announcement] on the OpenSSH development list.
 
 He basically advised to turn off roaming entirely with "UseRoaming no". Roaming you say? In SSH? Exactly, I myself have never heared of such a feature and the documentation says: None.
 
