@@ -72,7 +72,7 @@ set_out_buffer_size(size_t size)
 
 However buffer size can still be farily large, up to DEFAULT\_ROAMBUF (which will be important later).
 
-As we can get signed values from packet\_get\_int() we could have a pretty small buffer. Giving a negative value of -65535 would result in the value 1 being passed to set\_out\_buffer\_size which is not caught by the check. The global variable out\_buf\_size is set to 1 and out\_buf is allocated.
+As we can get unsigned values from packet\_get\_int() that get promoted to signed during the addition (thanks C!) we could have a pretty small buffer. Giving a negative value of -65535 would result in the value 1 being passed to set\_out\_buffer\_size which is not caught by the check. The global variable out\_buf\_size is set to 1 and out\_buf is allocated.
 
 Okay so now we have a pretty small out\_buf. Is that a problem? Normally it should not be, maybe it might make things slow.
 
