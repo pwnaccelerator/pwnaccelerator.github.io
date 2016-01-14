@@ -167,7 +167,7 @@ resend_bytes(int fd, u_int64_t *offset)
 }
 {% endhighlight %}
 
-The function resend\_bytes is called from the roaming\_resume function in roaming\_clinet.c:
+The function resend\_bytes is called from the roaming\_resume function in roaming\_client.c:
 
 {% highlight c++ %}
 	recv_bytes = packet_get_int64() ^ oldkey2;
