@@ -1,0 +1,212 @@
+---
+layout: post
+title: "SSHBleed - Initial Analysis"
+date: 2015-08-17
+categories: blog
+---
+
+**DISCLAIMER: This is a quick analysis based on a good amount of speculation and looking very quickly at some amount of unknown code. This is a 30 minute writedown and not a code audit! Take it with a grain of salt and correct me if I'm wrong.**
+
+On 2015-01-15 (his time) Damien Miller made a scary [announcement][announcement] on the OpenSSH development list.
+
+He basically advised to turn off roaming entirely with "UseRoaming no". Roaming you say? In SSH? Exactly, I myself have never heared of such a feature and the documentation says: None.
+
+I had a quick look at the code and found the following in roaming\_client.c:
+
+{% highlight c %}
+void
+roaming_reply(int type, u_int32_t seq, void *ctxt)
+{
+	if (type == SSH2_MSG_REQUEST_FAILURE) {
+		logit("Server denied roaming");
+		return;
+	}
+	verbose("Roaming enabled");
+	roaming_id = packet_get_int();
+	cookie = packet_get_int64();
+	key1 = oldkey1 = packet_get_int64();
+	key2 = oldkey2 = packet_get_int64();
+	set_out_buffer_size(packet_get_int() + get_snd_buf_size());
+	roaming_enabled = 1;
+}
+{% endhighlight %}
+
+Especially interesting is the line
+
+{% highlight c++ %}
+	set_out_buffer_size(packet_get_int() + get_snd_buf_size());
+{% endhighlight %}
+
+As you can see a (signed!) integer is taken from the wire and added to the return value of get\_snd\_buf\_size(). If nothing else is set, get\_snd\_buf\_size() will return DEFAULT\_ROAMBUF which is 65536.
+
+You can spot the integer overflow here quickly as being "packet\_get\_int() + get\_snd\_buf\_size()".
+
+I was fairly quick to announce a possible find for the bug on [Twitter][Twitter].
+
+Interestingly the overflow is mitigated as pointed out by [@aris_ada][@aris_ada].
+
+There is actually a check for insane buffer sizes in set\_out\_buffer\_size which mitigates the overflow (as we can not wrap due to the cast to size\_t):
+
+{% highlight c %}
+void
+set_out_buffer_size(size_t size)
+{
+	if (size == 0 || size > MAX_ROAMBUF)
+		fatal("%s: bad buffer size %lu", __func__, (u_long)size);
+	/*
+	 * The buffer size can only be set once and the buffer will live
+	 * as long as the session lives.
+	 */
+	if (out_buf == NULL) {
+		out_buf_size = size;
+		out_buf = xmalloc(size);
+		out_start = 0;
+		out_last = 0;
+	}
+}
+{% endhighlight %}
+
+However buffer size can still be farily large, up to DEFAULT\_ROAMBUF (which will be important later).
+
+As we can get signed values from packet\_get\_int() we could have a pretty small buffer. Giving a negative value of -65535 would result in the value 1 being passed to set\_out\_buffer\_size which is not caught by the check. The global variable out\_buf\_size is set to 1 and out\_buf is allocated.
+
+Okay so now we have a pretty small out\_buf. Is that a problem? Normally it should not be, maybe it might make things slow.
+
+Where is out\_buf_size used?
+
+Pretty often:
+{% highlight c %}
+roaming_common.c:38:static size_t out_buf_size = 0;
+roaming_common.c:83:		out_buf_size = size;
+roaming_common.c:118:	if (count > out_buf_size) {
+roaming_common.c:119:		buf += count - out_buf_size;
+roaming_common.c:120:		count = out_buf_size;
+roaming_common.c:122:	if (count < out_buf_size - out_last) {
+roaming_common.c:129:		size_t chunk = out_buf_size - out_last;
+roaming_common.c:145:		if (out_buf_size > 0)
+roaming_common.c:148:	if (out_buf_size > 0 &&
+roaming_common.c:169:	} else if (out_buf_size > 0 &&
+roaming_common.c:204:		available = out_buf_size;
+roaming_common.c:212:		atomicio(vwrite, fd, out_buf + out_buf_size - chunkend,
+{% endhighlight %}
+
+One place is the function roaming\_write:
+
+{% highlight c %}
+ssize_t
+roaming_write(int fd, const void *buf, size_t count, int *cont)
+{
+	ssize_t ret;
+
+	ret = write(fd, buf, count);
+	if (ret > 0 && !resume_in_progress) {
+		write_bytes += ret;
+		if (out_buf_size > 0)
+			buf_append(buf, ret);
+	}
+{% endhighlight %}
+
+It checks if there are bytes to append to some buffer and if out\_buf\_size is greater zero. It then calls buf\_append:
+
+{% highlight c %}
+static void
+buf_append(const char *buf, size_t count)
+{
+	if (count > out_buf_size) {
+		buf += count - out_buf_size;
+		count = out_buf_size;
+	}
+	if (count < out_buf_size - out_last) {
+		memcpy(out_buf + out_last, buf, count);
+		if (out_start > out_last)
+			out_start += count;
+		out_last += count;
+	} else {
+		/* data will wrap */
+		size_t chunk = out_buf_size - out_last;
+		memcpy(out_buf + out_last, buf, chunk);
+		memcpy(out_buf, buf + chunk, count - chunk);
+		out_last = count - chunk;
+		out_start = out_last + 1;
+	}
+}
+{% endhighlight %}
+
+This code looks pretty ugly as pointed out by [Lucas Todesco]. 
+But after all nothing found...
+
+So I looked at the following function:
+
+{% highlight c %}
+void
+resend_bytes(int fd, u_int64_t *offset)
+{
+	size_t available, needed;
+
+	if (out_start < out_last)
+		available = out_last - out_start;
+	else
+		available = out_buf_size;
+ 	needed = write_bytes - *offset;
+	debug3("resend_bytes: resend %lu bytes from %llu",
+	    (unsigned long)needed, (unsigned long long)*offset);
+	if (needed > available)
+		fatal("Needed to resend more data than in the cache");
+	if (out_last < needed) {
+		int chunkend = needed - out_last;
+		atomicio(vwrite, fd, out_buf + out_buf_size - chunkend,
+		    chunkend);
+		atomicio(vwrite, fd, out_buf, out_last);
+	} else {
+		atomicio(vwrite, fd, out_buf + (out_last - needed), needed);
+	}
+}
+{% endhighlight %}
+
+The function resend\_bytes is called from the roaming\_resume function in roaming\_clinet.c:
+
+{% highlight c++ %}
+	recv_bytes = packet_get_int64() ^ oldkey2;
+	debug("Peer received %llu bytes", (unsigned long long)recv_bytes);
+	resend_bytes(packet_get_connection_out(), &recv_bytes);
+{% endhighlight %}
+
+What it does is it will let the peer tell us how much data it received yet (oldkey2 is also read from the peer and is uint64!). It passes this to resend\_bytes(...).
+
+As we can see above resend bytes will treat this as an unsigned value "*offset" and use it to calculate "needed = write\_bytes - *offset" with write\_bytes being the bytes already written to the peer.
+
+**If the peer gives a value for *offset that is larger than write\_bytes we have an integer underflow which will result in a value larger than write\_bytes as a result!**
+
+You are probably just now thinking about: What if the peer lies to us and gives us an offset that is too great, can we "heartbleed" the buffer? Luckily there is a check:
+{% highlight c %}
+	if (needed > available)
+		fatal("Needed to resend more data than in the cache");
+{% endhighlight %}
+
+What is available? Available is either "available = out\_last - out\_start" or available is "out\_buf\_size". So let's assume it is out\_buf\_size.
+The problem: out\_buf\_size is also user input! It is controlled by the peer and between 0 and MAX\_ROAMBUF (2*1024*1024). We can fabricate a value greater than write\_bytes but still less than the maximum buffer size of MAX\_ROAMBUF.
+And we will happily send too much data to the peer:
+
+{% highlight c %}
+if (out_last < needed) {
+		int chunkend = needed - out_last;
+		atomicio(vwrite, fd, out_buf + out_buf_size - chunkend,
+		    chunkend);
+		atomicio(vwrite, fd, out_buf, out_last);
+	} else {
+		atomicio(vwrite, fd, out_buf + (out_last - needed), needed);
+	}
+{% endhighlight %}
+
+Depending on what was allocated before in the SSH process all kinds of data would be leaked, from secret keys to pointer values.
+
+This code be reached when the functions roaming\_write or roaming\_read fail before all data is written.
+
+**If I did not miss anything (feel free to point it out!) I think the uninitialized buffer contents of out\_buf might be leaked similar to the heartbleed bug!**
+
+Interestingly while the integer I spotted in roaming\_reply is real is it not the culprit because it is mitigated. The integer underflow found in resend\_bytes seems to be the real deal in conjunction with the externally controllable  output buffer size.
+
+[announcement]: https://lists.mindrot.org/pipermail/openssh-unix-dev/2016-January/034679.html
+[Twitter]: https://twitter.com/marver/status/687644904575627264
+[@aris_ada]: https://twitter.com/aris_ada/status/687655171808215040
+[Lucas Todesco]: https://twitter.com/qwertyoruiop/status/687665365472702464
