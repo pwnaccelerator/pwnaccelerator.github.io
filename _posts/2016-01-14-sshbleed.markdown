@@ -188,7 +188,7 @@ You are probably just now thinking about: What if the peer lies to us and gives 
 {% endhighlight %}
 
 What is available? Available is either "available = out\_last - out\_start" or available is "out\_buf\_size". So let's assume it is out\_buf\_size.
-The problem: out\_buf\_size is also user input! It is controlled by the peer and between 0 and MAX\_ROAMBUF (2*1024*1024). We can fabricate a value greater than write\_bytes but still less than the maximum buffer size of MAX\_ROAMBUF.
+The problem: out\_buf\_size is also external input! It is controlled by the peer and between 0 and MAX\_ROAMBUF (2*1024*1024). We can fabricate a value greater than write\_bytes but still less than the maximum buffer size of MAX\_ROAMBUF.
 And we will happily send too much data to the peer:
 
 {% highlight c %}
