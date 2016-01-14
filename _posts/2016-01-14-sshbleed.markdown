@@ -5,6 +5,10 @@ date: 2016-01-14
 categories: blog
 ---
 
+**There is now an advisory from Qualys with full details: https://www.qualys.com/2016/01/14/cve-2016-0777-cve-2016-0778/openssh-cve-2016-0777-cve-2016-0778.txt**
+
+**This blog post was written before the Qualys advisory was released and is based on my own analysis.**
+
 **DISCLAIMER: This is a quick analysis based on a good amount of speculation and looking very quickly at some amount of unknown code. This is a 30 minute writedown and not a code audit! Take it with a grain of salt and correct me if I'm wrong.**
 
 On 2015-01-14 (his time) Damien Miller made a scary [announcement][announcement] on the OpenSSH development list.
