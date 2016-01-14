@@ -208,7 +208,7 @@ This code be reached when the functions roaming\_write or roaming\_read fail bef
 
 **If I did not miss anything (feel free to point it out!) I think the uninitialized buffer contents of out\_buf might be leaked similar to the heartbleed bug!**
 
-Interestingly while the integer I spotted in roaming\_reply is real is it not the culprit because it is mitigated. The integer underflow found in resend\_bytes seems to be the real deal in conjunction with the externally controllable  output buffer size.
+Interestingly while the integer overflow I spotted in roaming\_reply is real, it is not the culprit because it is mitigated. The integer underflow found in resend\_bytes seems to be the real deal in conjunction with the externally controllable  output buffer size.
 
 [announcement]: https://lists.mindrot.org/pipermail/openssh-unix-dev/2016-January/034679.html
 [Twitter]: https://twitter.com/marver/status/687644904575627264
