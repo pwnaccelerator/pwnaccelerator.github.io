@@ -5,7 +5,7 @@ date: 2016-01-14
 categories: blog
 ---
 
-**There is now an advisory from Qualys with full details: https://www.qualys.com/2016/01/14/cve-2016-0777-cve-2016-0778/openssh-cve-2016-0777-cve-2016-0778.txt**
+**UPDATE: There is now an advisory from Qualys with full details: https://www.qualys.com/2016/01/14/cve-2016-0777-cve-2016-0778/openssh-cve-2016-0777-cve-2016-0778.txt**
 
 **This blog post was written before the Qualys advisory was released and is based on my own analysis.**
 
@@ -204,7 +204,7 @@ if (out_last < needed) {
 
 Depending on what was allocated before in the SSH process all kinds of data would be leaked, from secret keys to pointer values.
 
-This code be reached when the functions roaming\_write or roaming\_read fail before all data is written.
+This code could be reached when the functions roaming\_write or roaming\_read fail before all data is written.
 
 **If I did not miss anything (feel free to point it out!) I think the uninitialized buffer contents of out\_buf might be leaked similar to the heartbleed bug!**
 
