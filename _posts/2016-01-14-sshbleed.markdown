@@ -35,13 +35,13 @@ roaming_reply(int type, u_int32_t seq, void *ctxt)
 }
 {% endhighlight %}
 
-Especially interesting is the line
+Especially interesting is the line:
 
 {% highlight c++ %}
 	set_out_buffer_size(packet_get_int() + get_snd_buf_size());
 {% endhighlight %}
 
-As you can see a (signed!) integer is taken from the wire and added to the return value of get\_snd\_buf\_size(). If nothing else is set, get\_snd\_buf\_size() will return DEFAULT\_ROAMBUF which is 65536.
+As you can see an integer is taken from the wire and added to the return value of get\_snd\_buf\_size(). If nothing else is set, get\_snd\_buf\_size() will return DEFAULT\_ROAMBUF which is 65536.
 
 You can spot the integer overflow here quickly as being "packet\_get\_int() + get\_snd\_buf\_size()".
 
