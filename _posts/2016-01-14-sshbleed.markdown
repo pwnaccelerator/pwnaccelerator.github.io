@@ -204,7 +204,7 @@ if (out_last < needed) {
 
 Depending on what was allocated before in the SSH process all kinds of data would be leaked, from secret keys to pointer values.
 
-This code could be reached when the functions roaming\_write or roaming\_read fail before all data is written.
+This code is reached when the functions roaming\_write or roaming\_read fail before all data is written.
 
 **If I did not miss anything (feel free to point it out!) I think the uninitialized buffer contents of out\_buf might be leaked similar to the heartbleed bug!**
 
