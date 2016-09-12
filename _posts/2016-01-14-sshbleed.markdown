@@ -13,7 +13,7 @@ categories: blog
 
 On 2015-01-14 (his time) Damien Miller made a scary [announcement][announcement] on the OpenSSH development list.
 
-He basically advised to turn off roaming entirely with "UseRoaming no". Roaming you say? In SSH? Exactly, I myself have never heared of such a feature and the documentation says: None.
+He basically advised to turn off roaming entirely with "UseRoaming no". Roaming you say? In SSH? Exactly, I myself have never heard of such a feature and the documentation says: None.
 
 I had a quick look at the code and found the following in roaming\_client.c:
 
