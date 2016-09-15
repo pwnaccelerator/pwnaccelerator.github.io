@@ -301,7 +301,7 @@ unsigned char *HMAC(const EVP_MD *evp_md, const void *key, int key_len,
 {% endhighlight %}
 
 Since the parameter `n` is of type `size_t`, the value will be casted into a
-very large value near `LONG_MAX`. This will for sure cause an out of
+very large value near `LONG_MAX` (on 64bit architectures). This will for sure cause an out of
 bounds read, hitting unmapped memory addresses and therefore crashing
 the Signal application.
 
