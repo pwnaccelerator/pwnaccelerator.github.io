@@ -291,7 +291,7 @@ int SrtpStream::decrypt(RtpPacket &packet, int64_t logicalSequence) {
 }
 {% endhighlight %}
 
-The integer overflow at 4. will cause a negative value to be passed on
+The integer underflow at 4. will cause a negative value to be passed on
 to the HMAC function:
 
 {% highlight c++ %}
