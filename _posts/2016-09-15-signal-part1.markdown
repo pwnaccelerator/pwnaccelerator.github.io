@@ -87,8 +87,8 @@ the following way:
 
   1. Watch for a request to fetch an attachment.
   2. Fetch the original attachment of size *X*.
-  3. Pad the attachment with data of size *4GB + 1byte*, resulting in a
-  total size of *X + 4GB + 1*.
+  3. Pad the attachment with data of size *4GB*, resulting in a
+  total size of *X + 4GB*.
 
 As described above this will result in X bytes being checked with
 `verifyMAC()`, for which the original MAC is valid. Therefore we can add
