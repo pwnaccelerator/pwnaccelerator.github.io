@@ -45,7 +45,7 @@ So the MITM can actually forge a new file from the parts of the original one. So
 
 In case of a robust media codec such as MP3 we can create a little proof of concept of repeating the decrypted files contents resulting in a file that is still playable:
 
-{% include youtube.html video="c_8F7m2BUyQ" %}
+<iframe width="560" height="315" src="https://www.youtube.com/embed/c_8F7m2BUyQ" frameborder="0" allowfullscreen></iframe>
 
 Our tests showed that opus, ogg, and other containers may also be concatenated and are still playable.
 
@@ -55,7 +55,7 @@ If we know something more about the file encrypted, e.g. that it is a text being
 
 The result of this can be seen in the following video:
 
-{% include youtube.html video="HkCW4winfSw" %}
+<iframe width="560" height="315" src="https://www.youtube.com/embed/HkCW4winfSw" frameborder="0" allowfullscreen></iframe>
 
 If the file being sent is well known by the attacker, he might learn this by correlating file sizes (which will be nearly the same size as the encrypted size) in case of common files.
 
