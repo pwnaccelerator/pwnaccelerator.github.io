@@ -109,7 +109,7 @@ The simplest we can do is append `C` and build `C || T || C`. The second
 `C` won 't decrypt to `P`, however: when decrypting the second occurence
 of `C[0]`, decryption will produce
 ```
-D(K, T[1]) ⊕ C[n]
+D(K, C[0]) ⊕ T[1]
 ```
 instead of `D(K, C[0]) ⊕ IV`. Since we can't modify `T` (to ensure MAC
 validation), we can't control the plaintext block obtained. However, the
