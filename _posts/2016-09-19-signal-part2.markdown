@@ -55,7 +55,7 @@ If we know something more about the file encrypted, e.g. that it is a text being
 
 The result of this can be seen in the following video:
 
-{% include youtube.html video="HkCW4winfSw" %}
+<iframe width="560" height="315" src="https://www.youtube.com/embed/HkCW4winfSw" frameborder="0" allowfullscreen></iframe>
 
 If the file being sent is well known by the attacker, he might learn this by correlating file sizes (which will be nearly the same size as the encrypted size) in case of common files.
 
