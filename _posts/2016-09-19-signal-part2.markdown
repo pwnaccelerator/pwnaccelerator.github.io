@@ -45,7 +45,7 @@ So the MITM can actually forge a new file from the parts of the original one. So
 
 In case of a robust media codec such as MP3 we can create a little proof of concept of repeating the decrypted files contents resulting in a file that is still playable:
 
-{% include youtube.html video="c_8F7m2BUyQ" %}
+<iframe width="560" height="315" src="https://www.youtube.com/embed/c_8F7m2BUyQ" frameborder="0" allowfullscreen></iframe>
 
 Our tests showed that opus, ogg, and other containers may also be concatenated and are still playable.
 
