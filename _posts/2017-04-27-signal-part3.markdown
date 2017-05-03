@@ -16,7 +16,7 @@ Here I would like to talk about another really interesting finding that relates 
 
 # X3DH Key agreement
 
-<img src="https://pwnaccelerator.github.io/images/posts/2017-05-01/x3dh.png" width=600>
+![](https://pwnaccelerator.github.io/images/posts/2017-05-01/x3dh.png)
 
 Signal uses a variant of the Diffie–Hellman key exchange called the [X3DH][x3dh] key agreement protocol also called "Extended Triple Diffie-Hellman".
 It is especially suited for use in asynchronous communication scenarios where one party may be offline during key exchange.
