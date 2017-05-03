@@ -156,7 +156,7 @@ As mentioned, Signal will not create a new session if it already knows the base-
 
 After conducting the above steps, Mallory has now forced the target session to be purged on Bob's side. Alice and Bob may communicate happily and will not see any warnings.
 
-It is now time for Mallory to replay the initial message sent from Alice to Bob (Mallory saved this of course after forcing the usage of the last-resort key). Since the last-resort prekey was used session-creation succeeds, the same shared secret will be created, and the initial message will be decrypted successfully. This applies not just to the first message but also the following messages sent by Alice up to the next ratchet step. Most probably individual messages can be omitted (but we did not test that).
+It is now time for Mallory to replay the initial message sent from Alice to Bob (Mallory saved this of course after forcing the usage of the last-resort key). Since the last-resort prekey was used session-creation succeeds, the same shared secret will be created, and the initial message will be decrypted successfully. This applies not just to the first message but also the following messages sent by Alice up to the next Diffie-Hellman ratchet step. Most probably individual messages can be omitted (but we did not test that).
 
 The following video shows a replay attack conducted against a current Signal app (as of 2017-04-23) running on Android (sorry for the bad quality, I will probably create a better one if there is demand):
 
