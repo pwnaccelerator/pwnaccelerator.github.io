@@ -200,7 +200,8 @@ Messages were sent from a [third-party command-line client][signal-cli] for ease
 
 ### Did Open Whisper Systems acknowledge this as a vulnerability?
 
-  - Not yet, there was no public statement to our research regarding the message replay. The potential for a replay was discussed in a [public github issue][replayissue] by others and the usage of last resort keys [criticised][lastresortcrit]. Still it was deemed as [**WONTFIX**][moxiedisregard]. Maybe this will be reconsidered given a practical attack has now been demonstrated publicly.
+  - **Update 2017-05-03**: Moxie Marlinspike asked us to clarify about the disclosure of this message replay. We did not talk with Moxie beforehand and he did not give any technical input to this post and did not acknowledge anything beforehand. The rationale behind disclosure is that the underlying issues are already known, discussed, and documented (see the linked [X3DH spec][x3dh], [GitHub issue][replayissue], [blogpost][lastresortcrit], and [papers][proscript-messaging]). What has been shown here is a practical proof-of-concept for such a replay attack in a specific scenario and the limitations of the protocol. Apparently the last resort keys are currently being phased out, which is a good thing.
+  - <del>Not yet, there was no public statement to our research regarding the message replay. The potential for a replay was discussed in a [public github issue][replayissue] by others and the usage of last resort keys [criticised][lastresortcrit]. Still it was deemed as [**WONTFIX**][moxiedisregard]. Maybe this will be reconsidered given a practical attack has now been demonstrated publicly.</del>
 
 [zerokeyjp]: https://research.kudelskisecurity.com/2017/04/25/should-ecdh-keys-be-validated/
 [x3dh]: https://whispersystems.org/docs/specifications/x3dh/
