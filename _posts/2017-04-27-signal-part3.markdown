@@ -127,13 +127,13 @@ As seen above there is one key that is never removed from the prekey-store. As a
 
 We mentioned that not all parts of a Signal message are integrity checked. Let's have a look on how such an initial PreKeyMessage looks like:
 
-<img src="/images/posts/2017-05-01/PreKeySignalMessage.svg" width=600>
+![](/images/posts/2017-05-01/PreKeySignalMessage.svg)
 
 As you can see the message includes an encrypted part *"message"* as well as key exchange values, ids of the prekeys used, Alice's public identity, and the registration id of the corresponding Signal user.
 
 Interestingly integrity checking via HMAC is only done on the encrypted part:
 
-<img src="/images/posts/2017-05-01/PreKeySignalMessageIntegrity.svg" width=600>
+![](/images/posts/2017-05-01/PreKeySignalMessageIntegrity.svg)
 
 What does this mean for Mallory? Being a MITM she can change the *baseKey* value. This will result in a key exchange being conducted that results in a fake session. Mallory cannot really use this session since she does not have the private identity key and therefore does not know the shared secret. But the ability to create *"fake sessions"* alone comes in handy in the next steps.
 
