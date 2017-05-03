@@ -198,7 +198,7 @@ Messages were sent from a [third-party command-line client][signal-cli] for ease
   - No since there is still a substantial time window for a replay attack until the key is actually rotated.
   - Also a MITM attacker may even prevent the key rotation from succeeding, e.g. by causing an upload of new keys by Bob to fail.
 
-### Did Open Whisper Systems acknowledge this as a vulnerability
+### Did Open Whisper Systems acknowledge this as a vulnerability?
 
   - Not yet, there was no public statement to our research regarding the message replay. The potential for a replay was discussed in a [public github issue][replayissue] by others and the usage of last resort keys [criticised][lastresortcrit]. Still it was deemed as [**WONTFIX**][moxiedisregard]. Maybe this will be reconsidered given a practical attack has now been demonstrated publicly.
 
