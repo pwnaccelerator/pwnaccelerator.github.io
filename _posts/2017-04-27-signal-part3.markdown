@@ -169,7 +169,7 @@ Messages were sent from a [third-party command-line client][signal-cli] for ease
 
 ### What is the impact?
 
-  - An attacker can replay the first messages of a session. The applies to all messages sent until the first Diffie-Hellman ratchet step, not only the first message. Depending on the type of communication severity may vary. For human to human text-only communication the impact is limited, but in machine-to-machine or group messaging contexts this property of the Signal Protocol might enable attacks.
+  - An attacker can replay the first messages of a session. The applies to all messages sent until the first Diffie-Hellman ratchet step, not only the first message. Depending on the type of communication severity may vary. For human to human text-only communication the impact is limited, but in machine-to-machine or group messaging contexts this property of the Signal Protocol might enable further attacks.
 
 ### Is this a vulnerability?
 
