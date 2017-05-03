@@ -50,7 +50,7 @@ This problem is somewhat known to the Signal vendor and discussed in the [X3DH s
 >For this reason, any post-X3DH protocol MUST randomize the encryption key before Bob sends encrypted data. For example, Bob could use a DH-based ratcheting protocol to combine SK with a freshly generated DH output to get a randomized encryption key [5].
 >Failure to randomize Bob's encryption key may cause catastrophic key reuse.
 
-It basically says replay is possible in X3DH if no one-time prekey is used in the initial message or no other mitigations are in place. This has also been researched by Nadim Kobeissi in a recent [paper][proscript-messaging].
+It basically says replay is possible in X3DH if no one-time prekey is used in the initial message or no other mitigations are in place. This has also been researched by Nadim Kobeissi, Karthikeyan Bhargavan, and Bruno Blanchet in their [paper][proscript-messaging].
 
 Signal tries to do things right:
 
