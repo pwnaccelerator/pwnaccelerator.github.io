@@ -190,7 +190,7 @@ Messages were sent from a [third-party command-line client][signal-cli] for ease
 
 ### How can this be fixed?
 
-  - Short-term: The whole message envelopes should be integrity checked, not just the encrypted part.
+  - Short-term: The whole message envelope should be integrity checked, not just the encrypted part.
   - Long-term: The concept of last-resort prekeys should be deprecated. A more secure fallback mechanism for key-exhaustion is recommended.
 
 ### Does key rotation mitigate a message replay?
