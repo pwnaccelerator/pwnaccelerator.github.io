@@ -158,7 +158,7 @@ After conducting the above steps, Mallory has now forced the target session to b
 
 It is now time for Mallory to replay the initial message sent from Alice to Bob (Mallory saved this of course after forcing the usage of the last-resort key). Since the last-resort prekey was used session-creation succeeds, the same shared secret will be created, and the initial message will be decrypted successfully. This applies not just to the first message but also the following messages sent by Alice up to the next Diffie-Hellman ratchet step. Most probably individual messages can be omitted (but we did not test that).
 
-The following video shows a replay attack conducted against a current Signal app (as of 2017-04-23) running on Android (sorry for the bad quality, I will probably create a better one if there is demand):
+The following video shows a replay attack conducted against a current Signal app (as of 2017-04-14) running on Android (sorry for the bad quality, I will probably create a better one if there is demand):
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/KANN9bZ7Y5M" frameborder="0" allowfullscreen></iframe>
 
