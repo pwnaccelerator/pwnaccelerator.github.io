@@ -15,6 +15,10 @@ In mid 2017 we started to research a bit into WebUSB. Similar to nearly every ot
 we thought it is a dangerous idea. We soon came up with the idea to circumvent U2F using WebUSB. As you might know
 U2F was regarded as "unphishable" and marketed[^1] because authentication is bound to an origin.
 
+**Was there any specific bug to report? No, because it was widely discussed in the security scene that WebUSB is a bad idea. We
+believe we have demonstrated that by showing how it breaks U2F. There was no single issue to report to Google or Yubico,
+but a public discussion to trigger so WebUSB is fixed.**
+
 This means even if you trick a user into entering his facebook.com credentials on "https://fakebook.com", U2F still
 prevents bad things happening because there is no authentication key registered for "fakebook.com" that works on "facebook.com". The browser ensures that the origin is respected and only passes authentication requests for the current origin to the U2F authentication
 token. A simplified flow looks like this:
@@ -34,9 +38,6 @@ If you are interested in more details, you should watch our talk recorded at Off
 As a response to this, an article[^2] on wired.com was written by Andy Greenberg and ultimately Google decided to
 activate[^3] a kill switch to disable WebUSB remotely.
 
-Was there any specific bug to report? No, because it was widely discussed in the security scene that WebUSB is a bad idea. We
-believe we have demonstrated that by showing how it breaks U2F. There was no single issue to report to Google or Yubico,
-but a public discussion to trigger so WebUSB is fixed.
 
 # WebUSB Part II, HID Access and Further Research
 
