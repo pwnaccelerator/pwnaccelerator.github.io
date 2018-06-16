@@ -29,7 +29,7 @@ So far so good. Introducing WebUSB, a website can now directly talk to a USB dev
 to use this to sort of "emulate" the browser. Being able to talk to the U2F device directly, authentication requests for any origins
 can be processed on any web site regardless the origin.
 
-We quickly realized this is not limited to U2F / FIDO and developed a generic proxy that allows to **forward
+We realized this is not limited to U2F / FIDO and developed a generic proxy that allows to **forward
 any USB device exposed to WebUSB to a remote system**. This includes SmartCard readers, GPG keys, WebCams, Keyboards, and much more.
 If you are interested in more details, you should watch our talk recorded at Offensive Con in Berlin on 2018-02-16:
 
