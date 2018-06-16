@@ -108,7 +108,7 @@ The original timeline was:
 
 ![](/images/posts/2018-06-15/yubico-timeline-orig.png){:width="100%"}
 
-The new timeline changed one day later looks like this:
+Their updated timeline looks like this:
 
 ![](/images/posts/2018-06-15/yubico-timeline-new.png){:width="100%"}
 
@@ -128,8 +128,7 @@ issue marketing wise:
 
 ![](/images/posts/2018-06-15/mobileidworld.png){:width="100%"}
 
-On top of everything else this shows what the intention is here, looking good by exploiting
-our work.
+On top of everything this is just pure irony.
 
 # Final Words
 
