@@ -19,7 +19,7 @@ believe we have demonstrated that by showing how it breaks U2F. There was no sin
 but a public discussion to trigger so WebUSB is fixed.**
 
 As you might know
-U2F was regarded as "unphishable" and marketed[^1] because authentication is bound to an origin.
+U2F was regarded as "unphishable"[^1] because authentication is bound to an origin.
 
 This means even if you trick a user into entering his facebook.com credentials on "https://fakebook.com", U2F still
 prevents bad things happening because there is no authentication key registered for "fakebook.com" that works on "facebook.com". The browser ensures that the origin is respected and only passes authentication requests for the current origin to the U2F authentication
