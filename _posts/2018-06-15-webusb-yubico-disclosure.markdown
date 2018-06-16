@@ -14,6 +14,7 @@ If you want to skip the background and read about the recent events just scroll 
 In mid 2017 we started to research a bit into WebUSB. Similar to nearly every other security expert in the field
 we thought it is a dangerous idea. We soon came up with the idea to circumvent U2F using WebUSB. As you might know
 U2F was regarded as "unphishable" and marketed[^1] because authentication is bound to an origin.
+
 This means even if you trick a user into entering his facebook.com credentials on "https://fakebook.com", U2F still
 prevents bad things happening because there is no authentication key registered for "fakebook.com" that works on "facebook.com". The browser ensures that the origin is respected and only passes authentication requests for the current origin to the U2F authentication
 token. A simplified flow looks like this:
@@ -141,7 +142,8 @@ I always believed in working with vendors to get issues fixed,
 but things like this makes you wonder why people hoarding exploits, doing full disclosure, or selling them have an
 apparently easy and prosper life.
 
-On a professional level I never had any problems with work and research when being contracted to to security audits.
+On a professional level I never had any problems with work and research when being contracted to do security audits,
+expectations and resonsibilities are clear.
 But as a private researcher it seems like being nice just means trouble.
 
 # References
