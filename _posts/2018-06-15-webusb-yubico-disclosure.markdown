@@ -55,7 +55,7 @@ attendees of Offensive Con and other people, now we were contacted[^4] by Yubico
 ![](/images/posts/2018-06-15/jesper-contact.png)
 
 On March 2nd we did a call with Jesper where he was asking us to explain the issue because they wanted to "understand what's going on".
-We did not contact YubiCo before because we did not believe the possible attacks where a flaw of YubiCo products
+We did not contact YubiCo before because we did not believe the possible attacks were a flaw of YubiCo products
 and also made sure to stress this in our talk. The issue was a design problem and inherent issue of WebUSB and U2F
 conflicting in terms of security.
 
