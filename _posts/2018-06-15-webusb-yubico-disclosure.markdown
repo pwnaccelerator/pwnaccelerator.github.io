@@ -83,12 +83,12 @@ basically Yubico claims parallel research, and that when we had the call they al
 what we had. Also that they were working with Google without telling us.
 
 So to get this clear: Yubico had internally replicated our work, contacted us to gather information about
-what we have not released so far, asked us for help to create a PoC, BUT DID NOT TELL US ANYTHING ABOUT THEIR INTENTIONS?
+what we have not released so far, asked us for help to create a PoC, BUT DID NOT TELL US ANYTHING ABOUT THEIR INTENTIONS?!
 Then went to Google, two days later submitting a comprehensive analysis of the research, claiming
 to have new original content and gaining a 5.000 USD bounty for this (which they donated to charity, maybe
 because it did not really feel right?)!
 
-As for our bug submitted two days before we did declined a bounty and someone commented that "HID access is already known".
+As for our bug submitted two days before we were declined a bounty and someone commented that "HID access is already known".
 As of today the issue is still restricted and I will not post the full information therefore. But I can
 post what we submitted in the first place showing we submitted a PoC and two issues, a memory corruption
 and the HID access also submitted by Yubico:
@@ -134,10 +134,15 @@ On top of everything this is just pure irony.
 
 To make it clear: I'm not after fame, credits, or want to take some bounty away from @girlswhocode!
 Things like these are just disappointing and I refuse to let a vendor get away with such behavior.
-So what are my takeaways from this for free-time pro bono research (being contracted for work
-is an entirely different game)? I always believed in working with vendors to get issues fixed,
+So what are my takeaways from this for free-time pro bono research adventure? (Being contracted for work
+is an entirely different game.)
+
+I always believed in working with vendors to get issues fixed,
 but things like this makes you wonder why people hoarding exploits, doing full disclosure, or selling them have an
 apparently easy and prosper life.
+
+On a professional level I never had any problems with work and research when being contracted to to security audits.
+But as a private researcher it seems like being nice just means trouble.
 
 # References
 
