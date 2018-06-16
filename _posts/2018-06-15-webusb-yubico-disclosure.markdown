@@ -15,7 +15,7 @@ In mid 2017 we started to research a bit into WebUSB. Similar to nearly every ot
 we thought it is a dangerous idea. We soon came up with the idea to circumvent U2F using WebUSB. As you might know
 U2F was regarded as "unphishable" and marketed[^1] because authentication is bound to an origin.
 
-**Was there any specific bug to report? No, because it was widely discussed in the security scene that WebUSB is a bad idea. We
+**Was there any specific bug to report before we gave the talk? No, because it was widely discussed in the security scene that WebUSB is a bad idea. We
 believe we have demonstrated that by showing how it breaks U2F. There was no single issue to report to Google or Yubico,
 but a public discussion to trigger so WebUSB is fixed.**
 
