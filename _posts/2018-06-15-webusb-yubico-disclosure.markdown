@@ -12,12 +12,14 @@ If you want to skip the background and read about the recent events just scroll 
 # The Background - WebUSB vs. U2F
 
 In mid 2017 we started to research a bit into WebUSB. Similar to nearly every other security expert in the field
-we thought it is a dangerous idea. We soon came up with the idea to circumvent U2F using WebUSB. As you might know
-U2F was regarded as "unphishable" and marketed[^1] because authentication is bound to an origin.
+we thought it is a dangerous idea. We soon came up with the idea to circumvent U2F using WebUSB.
 
 **Was there any specific bug to report before we gave the talk? No, because it was widely discussed in the security scene that WebUSB is a bad idea. We
 believe we have demonstrated that by showing how it breaks U2F. There was no single issue to report to Google or Yubico,
 but a public discussion to trigger so WebUSB is fixed.**
+
+As you might know
+U2F was regarded as "unphishable" and marketed[^1] because authentication is bound to an origin.
 
 This means even if you trick a user into entering his facebook.com credentials on "https://fakebook.com", U2F still
 prevents bad things happening because there is no authentication key registered for "fakebook.com" that works on "facebook.com". The browser ensures that the origin is respected and only passes authentication requests for the current origin to the U2F authentication
@@ -72,7 +74,7 @@ Then on 2018-06-13 we got word from Francisco Alonso (@revskills) who mentioned 
 to have found and fixed a serious issue with WebUSB and getting a 5.000 USD bounty from Google for that. It was exactly our research and their "contribution" was that they apparently verified that HID access was possible
 under Windows and OS X.
 
-The credit given was "The researchers claimed", no link, no names, nothing mentioned. Instead the text was very keen
+The credit given was "The researchers claimed", no link, no names, nothing detailed mentioned. Instead the text was very keen
 on pointing out that our research was mistaken and Yubico got it right:
 
 ![](/images/posts/2018-06-15/yubico-incorrect.png){:width="100%"}
