@@ -67,7 +67,7 @@ On 2018-03-03 we submitted the HID issue and a memory corruption issue to the Ch
 
 # The Big Surprise
 
-Time went on, we submitted a follow up talk to our talk to our research to Blackhat and Defcon, neither accepted it. Personally
+Time went on, we submitted a follow up talk to Blackhat and Defcon, neither of them accepted it. Personally
 that has been disappointing, but nobody is entitled to have a slot at these conferences and it is their decision.
 
 Then on 2018-06-13 we got word from Francisco Alonso (@revskills) who mentioned a Twitter post by Yubico claiming
