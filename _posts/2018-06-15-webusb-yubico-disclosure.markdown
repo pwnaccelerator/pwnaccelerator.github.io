@@ -6,6 +6,8 @@ categories: blog
 author: Markus Vervier
 ---
 
+**Update 2018-06-19: Yubico updated their statement on 2018-06-18, apologizing and crediting us: https://twitter.com/Yubico/status/1008816076610625536**
+
 In the light of recent events here are my (Markus Vervier) personal and final thoughts on what happened with YubiCo and our WebUSB research.
 If you want to skip the background and read about the recent events just scroll down to "The Big Surprise".
 
