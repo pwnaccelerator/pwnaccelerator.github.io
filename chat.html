@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Prompt API (multimodal) origin trial, bound to https://pwnaccelerator.github.io, expires ~2026-06-15 -->
+<meta http-equiv="origin-trial" content="AtFJtE7KJVwui1ofJWhK6FhduVkhIzG/xjYN3OL+ZnUSUnWXbVeLByyQTH4nQnYcbNN5LwV4zfbezx08mu3fPwgAAABseyJvcmlnaW4iOiJodHRwczovL3B3bmFjY2VsZXJhdG9yLmdpdGh1Yi5pbzo0NDMiLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElNdWx0aW1vZGFsSW5wdXQiLCJleHBpcnkiOjE3ODE1NjgwMDB9">
+<title>chrome llm chat</title>
+<style>
+  :root {
+    --bg: #0e0f12;
+    --panel: #16181d;
+    --border: #262932;
+    --fg: #e6e8ec;
+    --muted: #8a8f9c;
+    --accent: #7aa2f7;
+    --user: #1f2430;
+    --assistant: #15181f;
+    --error: #f7768e;
+    --ok: #9ece6a;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+  }
+  #app {
+    width: 100%;
+    max-width: 820px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: relative;
+  }
+  header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--panel);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  #status {
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  #status.ok { color: var(--ok); }
+  #status.err { color: var(--error); }
+  #reset {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  #reset:hover { color: var(--fg); border-color: var(--fg); }
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .msg {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-width: 92%;
+  }
+  .msg.user { background: var(--user); align-self: flex-end; }
+  .msg.assistant { background: var(--assistant); align-self: flex-start; }
+  .msg.error {
+    background: #2a1418;
+    border-color: var(--error);
+    color: var(--error);
+    align-self: stretch;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+  }
+  .role {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .msg.user .role { color: var(--accent); }
+  .msg .images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .msg .images img {
+    max-width: 240px;
+    max-height: 200px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    display: block;
+  }
+  .composer {
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+    padding: 8px 12px 12px;
+  }
+  #attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  #attachments:empty { display: none; }
+  .thumb {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .thumb button {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.7);
+    color: var(--fg);
+    font-size: 12px;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+  }
+  .thumb button:hover { background: var(--error); }
+  form {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  textarea {
+    flex: 1;
+    resize: none;
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font: inherit;
+    min-height: 44px;
+    max-height: 200px;
+  }
+  textarea:focus { outline: none; border-color: var(--accent); }
+  .iconbtn {
+    background: var(--bg);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 44px;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+  }
+  .iconbtn:hover:not(:disabled) { color: var(--fg); border-color: var(--fg); }
+  .iconbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.send {
+    background: var(--accent);
+    color: #0e0f12;
+    border: none;
+    border-radius: 8px;
+    padding: 0 16px;
+    height: 44px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.send:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .hint {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 24px 16px;
+  }
+  .hint code {
+    background: var(--panel);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  .blink::after {
+    content: "_";
+    animation: blink 1s steps(2, start) infinite;
+  }
+  @keyframes blink { to { visibility: hidden; } }
+  .drop-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(122, 162, 247, 0.12);
+    border: 2px dashed var(--accent);
+    border-radius: 8px;
+    pointer-events: none;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--accent);
+    z-index: 10;
+  }
+  #app.dragging .drop-overlay { display: flex; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>chrome llm chat</h1>
+    <span id="status">initializing</span>
+    <button id="reset" type="button" title="clear conversation and reset session">reset</button>
+  </header>
+  <div id="messages">
+    <div class="hint">
+      uses the on-device <code>window.LanguageModel</code> API.<br>
+      attach images via the paperclip, clipboard paste, or drag-and-drop. text-only when image input is unavailable.
+    </div>
+  </div>
+  <div class="composer">
+    <div id="attachments"></div>
+    <form id="form">
+      <input type="file" id="file" accept="image/*" multiple hidden>
+      <button class="iconbtn" id="attach" type="button" title="attach images" disabled>+</button>
+      <textarea id="input" placeholder="ask something. enter to send, shift+enter for newline." autofocus></textarea>
+      <button class="send" type="submit" disabled>send</button>
+    </form>
+  </div>
+  <div class="drop-overlay">drop images to attach</div>
+</div>
+
+<script>
+(() => {
+  const $app = document.getElementById('app');
+  const $messages = document.getElementById('messages');
+  const $form = document.getElementById('form');
+  const $input = document.getElementById('input');
+  const $send = $form.querySelector('button.send');
+  const $status = document.getElementById('status');
+  const $reset = document.getElementById('reset');
+  const $attach = document.getElementById('attach');
+  const $file = document.getElementById('file');
+  const $attachments = document.getElementById('attachments');
+
+  let session = null;
+  let busy = false;
+  let imageSupported = false;
+  let attachments = []; // [{ blob, url }]
+
+  const setStatus = (text, cls = '') => {
+    $status.textContent = text;
+    $status.className = cls;
+  };
+
+  const clearHint = () => {
+    const hint = $messages.querySelector('.hint');
+    if (hint) hint.remove();
+  };
+
+  const addMessage = (role, text = '', imageBlobs = []) => {
+    clearHint();
+    const wrap = document.createElement('div');
+    wrap.className = `msg ${role}`;
+    const r = document.createElement('div');
+    r.className = 'role';
+    r.textContent = role;
+    wrap.appendChild(r);
+
+    if (imageBlobs.length) {
+      const imgs = document.createElement('div');
+      imgs.className = 'images';
+      for (const blob of imageBlobs) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(blob);
+        imgs.appendChild(img);
+      }
+      wrap.appendChild(imgs);
+    }
+
+    const body = document.createElement('div');
+    body.className = 'body';
+    body.textContent = text;
+    wrap.appendChild(body);
+    $messages.appendChild(wrap);
+    $messages.scrollTop = $messages.scrollHeight;
+    return body;
+  };
+
+  const updateSendButton = () => {
+    const hasText = $input.value.trim().length > 0;
+    const hasImages = attachments.length > 0;
+    $send.disabled = busy || !session || (!hasText && !hasImages);
+  };
+
+  const setBusy = (b) => {
+    busy = b;
+    $input.disabled = b;
+    $attach.disabled = b || !imageSupported;
+    updateSendButton();
+  };
+
+  const renderAttachments = () => {
+    $attachments.innerHTML = '';
+    attachments.forEach((att, i) => {
+      const t = document.createElement('div');
+      t.className = 'thumb';
+      const img = document.createElement('img');
+      img.src = att.url;
+      t.appendChild(img);
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.textContent = 'x';
+      x.title = 'remove';
+      x.addEventListener('click', () => {
+        URL.revokeObjectURL(att.url);
+        attachments.splice(i, 1);
+        renderAttachments();
+        updateSendButton();
+      });
+      t.appendChild(x);
+      $attachments.appendChild(t);
+    });
+  };
+
+  const addAttachments = (files) => {
+    if (!imageSupported) return;
+    for (const f of files) {
+      if (!f || !f.type || !f.type.startsWith('image/')) continue;
+      attachments.push({ blob: f, url: URL.createObjectURL(f) });
+    }
+    renderAttachments();
+    updateSendButton();
+  };
+
+  async function probeImageSupport() {
+    if (typeof LanguageModel.availability !== 'function') return false;
+    try {
+      const a = await LanguageModel.availability({
+        expectedInputs: [{ type: 'text' }, { type: 'image' }]
+      });
+      return a && a !== 'unavailable';
+    } catch {
+      return false;
+    }
+  }
+
+  async function initSession() {
+    setStatus('initializing');
+    setBusy(true);
+
+    if (typeof LanguageModel === 'undefined') {
+      addMessage('error',
+        'LanguageModel API not found.\n' +
+        'either the origin trial token is not active for this origin, or this browser does not support the Prompt API. ' +
+        'on chrome, enable chrome://flags/#prompt-api-for-gemini-nano and chrome://flags/#optimization-guide-on-device-model, ' +
+        'restart, then visit chrome://components and update "Optimization Guide On Device Model".'
+      );
+      setStatus('unavailable', 'err');
+      return;
+    }
+
+    try {
+      imageSupported = await probeImageSupport();
+
+      let baseAvailability = 'available';
+      if (typeof LanguageModel.availability === 'function') {
+        baseAvailability = await LanguageModel.availability();
+      }
+
+      if (baseAvailability === 'unavailable') {
+        setStatus('unavailable', 'err');
+        addMessage('error', 'model is unavailable on this device.');
+        return;
+      }
+
+      const opts = {};
+      if (imageSupported) {
+        opts.expectedInputs = [{ type: 'text' }, { type: 'image' }];
+      }
+      if (baseAvailability === 'downloadable' || baseAvailability === 'downloading') {
+        setStatus('downloading 0%');
+        opts.monitor = (m) => {
+          m.addEventListener('downloadprogress', (e) => {
+            const pct = Math.round((e.loaded ?? 0) * 100);
+            setStatus(`downloading ${pct}%`);
+          });
+        };
+      }
+
+      try {
+        session = await LanguageModel.create(opts);
+      } catch (err) {
+        // image-capable session creation failed; retry text-only
+        if (imageSupported) {
+          console.warn('image-capable session failed, falling back to text-only:', err);
+          imageSupported = false;
+          delete opts.expectedInputs;
+          session = await LanguageModel.create(opts);
+        } else {
+          throw err;
+        }
+      }
+
+      $attach.disabled = !imageSupported;
+      $attach.title = imageSupported
+        ? 'attach images'
+        : 'image input not supported by this model';
+      setStatus(imageSupported ? 'ready (text + image)' : 'ready (text only)', 'ok');
+      setBusy(false);
+      $input.focus();
+    } catch (err) {
+      console.error(err);
+      setStatus('error', 'err');
+      addMessage('error', `failed to create session: ${err.message || err}`);
+    }
+  }
+
+  function buildPrompt(text, images) {
+    // text only -> plain string, simpler path
+    if (images.length === 0) return text;
+    // multimodal -> structured message form
+    const content = [];
+    if (text) content.push({ type: 'text', value: text });
+    for (const blob of images) content.push({ type: 'image', value: blob });
+    return [{ role: 'user', content }];
+  }
+
+  async function send(text, imageBlobs) {
+    if (!session || busy) return;
+    if (!text && imageBlobs.length === 0) return;
+
+    addMessage('user', text, imageBlobs);
+    const body = addMessage('assistant', '');
+    body.classList.add('blink');
+    setBusy(true);
+
+    const promptInput = buildPrompt(text, imageBlobs);
+
+    try {
+      if (typeof session.promptStreaming === 'function') {
+        const stream = session.promptStreaming(promptInput);
+        let acc = '';
+        for await (const chunk of stream) {
+          if (typeof chunk === 'string') {
+            if (chunk.startsWith(acc) && chunk.length >= acc.length) {
+              acc = chunk; // cumulative-style stream
+            } else {
+              acc += chunk; // delta-style stream
+            }
+          }
+          body.textContent = acc;
+          $messages.scrollTop = $messages.scrollHeight;
+        }
+      } else {
+        const reply = await session.prompt(promptInput);
+        body.textContent = reply;
+      }
+    } catch (err) {
+      console.error(err);
+      body.textContent = `[error] ${err.message || err}`;
+      body.parentElement.classList.add('error');
+    } finally {
+      body.classList.remove('blink');
+      setBusy(false);
+      $input.focus();
+    }
+  }
+
+  // ---- event wiring ----
+
+  $form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = $input.value.trim();
+    const images = attachments.map(a => a.blob);
+    if (!text && images.length === 0) return;
+    $input.value = '';
+    $input.style.height = 'auto';
+    // the message DOM creates its own object URLs from the blobs, so
+    // revoking the composer thumbnails here is safe.
+    for (const a of attachments) URL.revokeObjectURL(a.url);
+    attachments = [];
+    renderAttachments();
+    updateSendButton();
+    send(text, images);
+  });
+
+  $input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      $form.requestSubmit();
+    }
+  });
+
+  $input.addEventListener('input', () => {
+    $input.style.height = 'auto';
+    $input.style.height = Math.min($input.scrollHeight, 200) + 'px';
+    updateSendButton();
+  });
+
+  $input.addEventListener('paste', (e) => {
+    if (!imageSupported) return;
+    const items = e.clipboardData?.items || [];
+    const files = [];
+    for (const it of items) {
+      if (it.kind === 'file') {
+        const f = it.getAsFile();
+        if (f && f.type.startsWith('image/')) files.push(f);
+      }
+    }
+    if (files.length) {
+      e.preventDefault();
+      addAttachments(files);
+    }
+  });
+
+  $attach.addEventListener('click', () => $file.click());
+  $file.addEventListener('change', () => {
+    addAttachments($file.files);
+    $file.value = '';
+  });
+
+  // drag and drop
+  let dragDepth = 0;
+  window.addEventListener('dragenter', (e) => {
+    if (!imageSupported) return;
+    if (!e.dataTransfer?.types?.includes('Files')) return;
+    dragDepth++;
+    $app.classList.add('dragging');
+  });
+  window.addEventListener('dragleave', () => {
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) $app.classList.remove('dragging');
+  });
+  window.addEventListener('dragover', (e) => {
+    if (e.dataTransfer?.types?.includes('Files')) e.preventDefault();
+  });
+  window.addEventListener('drop', (e) => {
+    dragDepth = 0;
+    $app.classList.remove('dragging');
+    if (!imageSupported) return;
+    const files = e.dataTransfer?.files;
+    if (files && files.length) {
+      e.preventDefault();
+      addAttachments(files);
+    }
+  });
+
+  $reset.addEventListener('click', async () => {
+    if (busy) return;
+    try { session?.destroy?.(); } catch {}
+    session = null;
+    for (const a of attachments) URL.revokeObjectURL(a.url);
+    attachments = [];
+    renderAttachments();
+    $messages.innerHTML = '';
+    await initSession();
+  });
+
+  initSession();
+})();
+</script>
+</body>
+</html>
