@@ -1,0 +1,3047 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<!-- Open Graph + Twitter card so the link previews as a proper image on social -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://pwnaccelerator.github.io/chat/bitchx.html">
+<meta property="og:title" content="BitchX-1.1-final - late-90s IRC client simulator">
+<meta property="og:description" content="Authentic 1998 BitchX/IRC terminal simulator with on-device LLM personas. EFnet/IRCnet/UnderNet, bash.org energy, netsplits, takeovers, ASCII art. ELIZA fallback for mobile.">
+<meta property="og:image" content="https://pwnaccelerator.github.io/chat/preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Screenshot of a BitchX IRC terminal showing a populated EFnet #2600 channel">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="BitchX-1.1-final IRC simulator">
+<meta name="twitter:description" content="late-90s IRC, on-device LLM personas, bash.org energy, channel takeovers, ASCII art. ELIZA fallback when the Prompt API isn't available.">
+<meta name="twitter:image" content="https://pwnaccelerator.github.io/chat/preview.png">
+<meta name="twitter:image:alt" content="BitchX IRC terminal screenshot">
+<!-- Prompt API (multimodal) origin trial, bound to https://pwnaccelerator.github.io, expires ~2026-06-15 -->
+<meta http-equiv="origin-trial" content="AtFJtE7KJVwui1ofJWhK6FhduVkhIzG/xjYN3OL+ZnUSUnWXbVeLByyQTH4nQnYcbNN5LwV4zfbezx08mu3fPwgAAABseyJvcmlnaW4iOiJodHRwczovL3B3bmFjY2VsZXJhdG9yLmdpdGh1Yi5pbzo0NDMiLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElNdWx0aW1vZGFsSW5wdXQiLCJleHBpcnkiOjE3ODE1NjgwMDB9">
+<title>BitchX-1.1-final</title>
+<script src="https://cdn.jsdelivr.net/gh/deskjet/chiptune2.js@master/libopenmpt.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/deskjet/chiptune2.js@master/chiptune2.js"></script>
+<style>
+  /* mIRC palette */
+  :root {
+    --c0:  #ffffff; --c1:  #000000; --c2:  #00007f; --c3:  #009300;
+    --c4:  #ff0000; --c5:  #7f0000; --c6:  #9c009c; --c7:  #fc7f00;
+    --c8:  #ffff00; --c9:  #00fc00; --c10: #009393; --c11: #00ffff;
+    --c12: #0000fc; --c13: #ff00ff; --c14: #7f7f7f; --c15: #d2d2d2;
+
+    --bg: #000;
+    --fg: #d2d2d2;
+    --statusbg: #00007f;
+    --statusfg: #00ffff;
+    --statusalt: #ffff00;
+    --statusw:   #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    /* X11 root window: dim grey with a fine stipple */
+    background-color: #353535;
+    background-image:
+      linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.03) 75%),
+      linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.03) 75%);
+    background-size: 4px 4px;
+    background-position: 0 0, 2px 2px;
+    color: var(--fg);
+    font: 13px/1.3 ui-monospace, "DejaVu Sans Mono", "Iosevka Term", "Menlo", "Consolas", monospace;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+  }
+
+  /* Motif / CDE-style xterm window chrome.
+     Chunky 3D bevel in beige-grey, outer hairline. */
+  #window {
+    /* mid-90s xterm running BitchX: roughly 80 cols x 25 rows of monospace
+       plus the Motif window chrome. ~880x680 caps the window at the
+       proportions of a 14" CRT at 1024x768 in 4:3 aspect. */
+    width: min(96vw, 880px);
+    height: min(96vh, 680px);
+    aspect-ratio: 880 / 680;
+    background: #b8b4ac;            /* Motif beige-grey */
+    border: 2px solid;
+    border-top-color: #e8e6df;
+    border-left-color: #e8e6df;
+    border-right-color: #2a2825;
+    border-bottom-color: #2a2825;
+    outline: 1px solid #000;
+    padding: 3px;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Motif active title bar: solid blue, white text, no gradient */
+  #titlebar {
+    background: #3a587c;
+    color: #ffffff;
+    padding: 1px 3px;
+    font: bold 11px "Helvetica", "Verdana", "DejaVu Sans", sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    user-select: none;
+    flex: 0 0 auto;
+    height: 22px;
+    border: 1px solid;
+    border-top-color: #6b88a8;
+    border-left-color: #6b88a8;
+    border-right-color: #1a2c44;
+    border-bottom-color: #1a2c44;
+  }
+  #title-icon {
+    color: #ffffff;
+    margin-right: 2px;
+    font-weight: bold;
+    font-family: inherit;
+  }
+  #title-text {
+    flex: 1;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+  .tb-controls { display: flex; gap: 1px; }
+  /* Motif-style square buttons, thin bevel */
+  .tb-btn {
+    background: #b8b4ac;
+    color: #000;
+    border: 1px solid;
+    border-top-color: #e8e6df;
+    border-left-color: #e8e6df;
+    border-right-color: #2a2825;
+    border-bottom-color: #2a2825;
+    width: 18px;
+    height: 18px;
+    font: 11px/1 "Helvetica", "Verdana", "DejaVu Sans", sans-serif;
+    padding: 0;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tb-btn:active {
+    border-top-color: #2a2825;
+    border-left-color: #2a2825;
+    border-right-color: #e8e6df;
+    border-bottom-color: #e8e6df;
+  }
+
+  /* The xterm terminal area, inset into the Motif frame */
+  #app {
+    background: var(--bg);
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    margin-top: 2px;
+    border: 1px solid;
+    border-top-color: #2a2825;
+    border-left-color: #2a2825;
+    border-right-color: #e8e6df;
+    border-bottom-color: #e8e6df;
+  }
+
+  /* small screens: drop the chrome, full bleed */
+  @media (max-width: 768px), (max-height: 540px) {
+    body { padding: 0; background: var(--bg); background-image: none; }
+    #window {
+      width: 100%;
+      height: 100vh;
+      border: none;
+      outline: none;
+      padding: 0;
+    }
+    #titlebar { display: none; }
+    #app { border: none; margin-top: 0; }
+  }
+  .statusbar {
+    background: var(--statusbg);
+    color: var(--statusfg);
+    padding: 0 4px;
+    white-space: pre;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 13px;
+    line-height: 1.4;
+    flex: 0 0 auto;
+  }
+  .statusbar .alt { color: var(--statusalt); }
+  .statusbar .w   { color: var(--statusw); }
+  .statusbar .dim { color: var(--c14); }
+  .statusbar .sep { color: var(--c15); }
+  #scrollback {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 2px 6px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  #scrollback .line { padding: 0; }
+  /* the iconic «º» red prefix */
+  .px { color: var(--c4); font-weight: bold; }
+  .ts { color: var(--c14); }
+
+  /* event line styles */
+  .ev-key { color: var(--c11); font-weight: bold; }   /* "Topic", "Users", "mode/" */
+  .ev-arg { color: var(--c15); }                       /* "(#chan)" */
+  .ev-val { color: var(--c8); }                        /* topic text, mode params */
+  .ev-by  { color: var(--c11); }                       /* "by nick" */
+  .ev-nick { color: var(--c15); font-weight: bold; }
+
+  .join-arrow { color: var(--c3); font-weight: bold; }
+  .part-arrow { color: var(--c4); font-weight: bold; }
+  .quit-arrow { color: var(--c4); font-weight: bold; }
+  .join-host { color: var(--c14); }
+  .join-nick { color: var(--c15); font-weight: bold; }
+  .nickchg   { color: var(--c8); }
+  .me        { color: var(--c13); }
+  .err       { color: var(--c4); }
+  .ok        { color: var(--c3); }
+  .info      { color: var(--c11); }
+  .motd      { color: var(--c14); }
+  .banner    { color: var(--c8); }
+  .banner2   { color: var(--c3); }
+  .banner3   { color: var(--c11); }
+  .mention   { background: rgba(255,255,0,0.10); }
+
+  /* original BitchX ANSI logo rendering */
+  .line.logo { white-space: pre; line-height: 1.0; padding: 0; font-size: 12px; overflow-x: hidden; }
+  .line.logo i { font-style: normal; }
+
+  .br        { color: var(--c15); }  /* < > brackets around nicks */
+
+  /* names list grid cell */
+  .ncell     { color: var(--c15); }
+  .ncell .op  { color: var(--c8); font-weight: bold; }     /* @ */
+  .ncell .vc  { color: var(--c11); font-weight: bold; }    /* + */
+  .ncell .br2 { color: var(--c11); }                        /* [ ] */
+
+  #inputline {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    background: var(--bg);
+    padding: 1px 6px 3px;
+    gap: 4px;
+  }
+  #prompt { color: var(--c11); white-space: nowrap; }
+  #prompt .b { color: var(--c11); }
+  #prompt .n { color: var(--c15); }
+  #input {
+    flex: 1;
+    background: transparent;
+    color: var(--fg);
+    border: none;
+    outline: none;
+    font: inherit;
+    padding: 0;
+    caret-color: var(--c15);
+  }
+  /* hashed nick colors for chat */
+  .nc2  { color: var(--c2);  } .nc3  { color: var(--c3);  }
+  .nc4  { color: var(--c4);  } .nc5  { color: var(--c5);  }
+  .nc6  { color: var(--c6);  } .nc7  { color: var(--c7);  }
+  .nc8  { color: var(--c8);  } .nc9  { color: var(--c9);  }
+  .nc10 { color: var(--c10); } .nc11 { color: var(--c11); }
+  .nc12 { color: var(--c12); } .nc13 { color: var(--c13); }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #111; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="window">
+  <div id="titlebar">
+    <span id="title-icon">&#9632;</span>
+    <span id="title-text" title="xterm running BitchX">xterm  ·  BitchX-1.1-final</span>
+    <span class="tb-controls">
+      <button class="tb-btn" type="button" tabindex="-1" title="Minimize">_</button>
+      <button class="tb-btn" type="button" tabindex="-1" title="Maximize">&#9633;</button>
+      <button class="tb-btn close" type="button" tabindex="-1" title="Close">&times;</button>
+    </span>
+  </div>
+  <div id="app">
+    <div id="scrollback"></div>
+    <div id="bottombar" class="statusbar"></div>
+    <div id="lagbar" class="statusbar"></div>
+    <div id="inputline">
+      <span id="prompt"><span class="b">[</span><span class="n">*</span><span class="b">]</span></span>
+      <input id="input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" autofocus>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// =================== constants (the world is 1998) ===================
+
+const SIM_YEAR = 1998;
+const SIM_DATE_STR = `Sat Aug 22 1998`;
+const BITCHX_VER  = 'BitchX-1.1-final';
+
+// Three real late-90s IRC networks. Each has its own server, MOTD flavour,
+// and channel set. Channels with the same name on different nets are
+// distinct entities with distinct state.
+const NETWORKS = {
+  efnet: {
+    name: 'EFnet',
+    server: 'irc.efnet.org',
+    flavour: 'Eris Free Network - American, no nick registration, takeover wars, h/p/c/v underground',
+    motd: [
+      '- ',
+      '- =====================================================',
+      '- EFnet - Eris Free Network',
+      '- =====================================================',
+      '- this server enforces a connection limit of 2 per host',
+      '- no nickserv, no chanserv. if you lose your nick you lose your channels',
+      '- no botnets, no spam, no flooding, no clones, no link looking',
+      '- abuse policy: 24 hour K-line on first offense',
+      '- read https://www.efnet.org/ before asking questions'
+    ],
+    channels: {
+      '#2600':    'phreaking, redboxes, 2600 magazine | DTMF welcome | no narcs',
+      '#hack':    'general hacking chatter | no script kiddies | read phrack first',
+      '#hacking': '/who is up to no good | bring exploits or stories | flames > 5min get ban',
+      '#phreak':  'red box, blue box, beige box | DTMF mainframes | europe + us trunk numbers',
+      '#phrack':  'phrack 53 just dropped | submissions to phrack@fc.net',
+      '#opers':   'EFnet IRC operators only | k-lines, g-lines, abuse@efnet.org | NO USERS',
+      '#defcon':  'DEF CON 6 was epic, who is going to DEF CON 7 next summer?',
+      '#malware': 'BO/NetBus/Sub7 chatter | no opening attachments from strangers',
+      '#virus':   'vx scene | VLAD, 29A, IKX zines | no live samples in chan, /msg only',
+      '#warez':   'NO TRADES IN CHAN. /msg only. ratio FTPs in topic when up.',
+      '#serialz': 'serial trading | /msg only | NO CARDING | abuse = ban',
+      '#shells':  'free shells | bnc trading | no rootshells | abuse means k-line',
+      '#irc':     'mIRC vs BitchX vs ircII | eggdrop scripts | DCC bots | no takeovers',
+      '#bofh':    'Bastard Operator From Hell | sysadmin war stories | excuse generator on /msg',
+      '#ansi':    'ANSI / ASCII art scene | iCE, ACiD, Fire, Dark submissions welcome',
+      '#mp3':     'mp3 trading | 128/192/256 only, NO LAYER2 | DCC fserves welcome',
+      '#linux':   'kernel 2.0.36 / 2.1.x | RedHat 5.2, Slack 3.6 | RTFM before asking',
+      '#unix':    'real unix only | bsd/solaris/irix/hpux/aix | no linux weenies'
+    }
+  },
+  ircnet: {
+    name: 'IRCnet',
+    server: 'irc.funet.fi',
+    flavour: 'European, split from EFnet 1996, no services, RFC-strict',
+    motd: [
+      '- ',
+      '- IRCnet @ FUNET, Espoo, Finland',
+      '- ',
+      '- This is the IRCnet network, formed in 1996 after the EFnet split.',
+      '- No NickServ. No ChanServ. No bots impersonating services.',
+      '- Connection limit: 4 per host. Channel limit: 10 per client.',
+      '- For policy questions consult #ircnet or your local IRCnet operator.'
+    ],
+    channels: {
+      '#ccc':         'Chaos Computer Club | 15C3 in Berlin this december | bring tape',
+      '#2600':        'european 2600 meetings | redbox no longer works in DE',
+      '#hack':        'european hack chatter | dual stack with #ccc regulars',
+      '#hacking':     'general hacking | non-german OK | mirror of EFnet #hacking',
+      '#phreak':      'european phreaking | C5 signalling, blueboxing via VoIP gateways',
+      '#opers':       'IRCnet operators | RFC1459 strict | abuse@ircnet.org',
+      '#linux.de':    'german linux | kernel 2.0/2.1 | RTFM auf deutsch',
+      '#linux':       'kernel 2.0/2.1 | english | european timezones',
+      '#cypherpunks': 'crypto, remailers, PGP 5.5 | no key escrow | code is speech',
+      '#pgp':         'PGP keysigning, web of trust | export controls still suck',
+      '#perl':        'perl 5.005 | larry wall is god | use strict; use warnings',
+      '#python':      'python 1.5.1 | guido > larry | no java in here',
+      '#amiga':       'Amiga still alive | OS 3.5 in beta | 68060 forever',
+      '#demoscene':   'assembly party '+'\''+'98 prep | scene.org submissions | no lamers',
+      '#ansi':        'european ansi/ascii scene | iCE.dk, ACiD.nl, Dark.de | demo group submissions'
+    }
+  },
+  undernet: {
+    name: 'UnderNet',
+    server: 'us.undernet.org',
+    flavour: 'has X bot for chanops, more civilized, friendlier to newbies',
+    motd: [
+      '- ',
+      '- The UnderNet IRC Network',
+      '- ',
+      '- /msg X@channels.undernet.org HELP for channel service info',
+      '- /msg X@channels.undernet.org LOGIN <user> <pass> to authenticate',
+      '- Register your nickname via X for channel access.',
+      '- For abuse contact abuse@undernet.org. K-lines via cservice.'
+    ],
+    channels: {
+      '#help':     'new user help | type /msg X help for channel service info',
+      '#irchelp':  'irc command and client help | be patient with newbies',
+      '#linux':    'linux help | kernel 2.0/2.1 | be nice to newbies',
+      '#hacking':  'mainstream hacking chat | beginners welcome, no warez',
+      '#opers':    'UnderNet operators only | X bot help, cservice@undernet.org',
+      '#c':        'C programming | k&r is on the shelf | no homework',
+      '#c++':      'C++ programming | STL is finally usable | egcs > gcc',
+      '#java':     'java 1.1.x | applets are cool | enterprise hype is real',
+      '#perl':     'perl 5.005 | CPAN questions ok | tmtowtdi',
+      '#python':   'python 1.5.1 | be helpful | beginners welcome',
+      '#php':      'PHP/FI to PHP3 | use mysql_query() like an adult | apache mod_php',
+      '#irc':      'irc clients and bots | mirc/pirch/bitchx welcome | no flooding',
+      '#mp3':      'mp3 chat | NO trades in channel | use /msg or shoutcast servers',
+      '#chat':     'general chat | english only | rules in /topic',
+      '#warez':    'NO. /msg only. this is a friendly network, take it to EFnet.'
+    }
+  }
+};
+
+function currentNet() { return NETWORKS[state.network] || NETWORKS.efnet; }
+
+const MAX_TRANSCRIPT = 200;
+const ACTIVE_CAP = 10;
+const PROMPT_LAST_N = 20;
+
+// Idle proactive: slow it down considerably so the channel feels like real IRC
+// where lulls are normal, not a thread starting every minute.
+const IDLE_BASE_MS = 240_000;
+const IDLE_JITTER_MS = 60_000;
+
+const MENTION_DELAY = [800, 3500];
+const BACKGROUND_DELAY = [4000, 18000];
+const PROACTIVE_DELAY = [500, 2500];
+
+// Response-frequency rate limiting. The naive "ask every active persona on
+// every user message" is way too chatty. These two knobs cap it.
+// - MAX_BACKGROUND_RESPONDERS: at most this many non-mentioned personas get
+//   the "respond or SKIP" prompt per user message. Mentioned personas always
+//   get prompted regardless of this cap.
+// - BACKGROUND_PROBABILITY: each candidate persona is rolled against this
+//   before being prompted, so even within the cap many turns pass quietly.
+// - COOLDOWN_MS: a persona who spoke this recently is skipped entirely.
+const MAX_BACKGROUND_RESPONDERS = 1;
+const BACKGROUND_PROBABILITY = 0.22;
+const COOLDOWN_MS = 25_000;
+
+const NICK_COLOR_CLASSES = ['nc3','nc4','nc6','nc7','nc8','nc9','nc10','nc11','nc12','nc13'];
+
+// 90s-flavored handles for /names lurkers (no LLM cost)
+const LURKER_POOL = [
+  'phr34k','k1ngp1n','dvdman','mudge','dildog','space_rogue','reid','drunkfux',
+  'erikb','phiber','acid_ph','datacow','optik','knight','kallahar','vortexia',
+  'aleph1','rfp','hobbit','solar','klog','prym','ph33r','b0fh','sirdystic',
+  'lord_dig','count_zero','oxblood','cdc','goblin','adm','el8','t350',
+  'gobbles','silvio','riley','nemo','psyon','horizon','tomes','venglin',
+  'core','tessier','pluvius','pp_','wkndsux','noodles','dipswitch','phasm',
+  'narkoz','zenith','obecto','ringzero','iridium','blunderbuss','pwlcrk',
+  'd4rkn0d3','9x','ntfsck','win95sucks','redbox','bluebox','greenbox','beigebox',
+  'modem56k','isdn128','ppp_dialup','aol_loser','geocity','tripod','angelfire',
+  'icq_uhoh','aim_lol','msn_die','ymsgr','wallhack','bunnyhop','rocketjump',
+  'quake3','q2demo','unreal','halflife','sin','heretic2','tribes','starcraft',
+  'broodwar','diablo2','everquest','ultima','meridian','wirehead','frob',
+  'jolt','vault7','silicon','breach','phreakr','x4n','ddt','sn0w','flexx',
+  'tnt_crew','razor','fairlight','radium','class','divine','prestige','myth',
+  'paradigm','origin','core_dump','sehe','xtreme','warlord','rancid','vaxbuster',
+  'kabal','phorce','sn1per','tcpdump','snoop','sniff_','airjack','dsniff',
+  'arpspoof','etterc','hunt_','juggernaut','ettercap','nemesis','hping','fragroute',
+  'queso','xprobe','siphon','firewalk','nessus','satan','saint','iss_','cybercop',
+  'crack_5','l0pht','lc3','john','rcrack','elcomsoft','passw0rd','13371337',
+  'r00tabega','undern3t','dalnet_','efnet_','ircnet','quakenet','newnet','hybrid',
+  'ratbox','ircd_','services','chanserv','nickserv','memoserv','operserv','helpserv',
+  'eggdrop','botnet','windrop','xdcc_','iroffer','fileserv','dcc_chat',
+  '0day','warez','iso_','keygen','crackz','serialz','appz','gamez',
+  'h4x0r','sk1ddie','ph34r','elite_','newbie','lamer','newb','wannabe',
+  'lord_v','dr_diss','sir_seg','mr_void','dark_v','grim_','spectre_','wraith_',
+  'cypher','morpheus','trinity','neo','tank','dozer','switch','apoc','mouse',
+  'sn0wcrash','hiro_p','yt_','enki_','raven_','rife_','asherah_',
+  'foo','bar','baz','qux','quux','xyzzy','plugh','frobnitz','spam','eggs',
+  'alice','bob','carol','dave','eve','mallory','trent','peggy','victor','walter'
+];
+
+// =================== ELIZA fallback (Weizenbaum 1966) ===================
+// Pure pattern-matching chatbot used when the Prompt API isn't available
+// (Firefox, Safari, mobile, missing origin trial token, ...). The user is
+// alone with ELIZA in #love. No LLM calls, no network, just a faithful
+// reimplementation of the canonical DOCTOR script.
+
+const ELIZA_REFLECTIONS = {
+  'am': 'are', 'was': 'were', 'i': 'you', "i'd": 'you would',
+  "i've": 'you have', "i'll": 'you will', 'my': 'your', 'are': 'am',
+  "you've": 'I have', "you'll": 'I will', 'your': 'my', 'yours': 'mine',
+  'you': 'me', 'me': 'you', 'myself': 'yourself', 'yourself': 'myself'
+};
+
+const ELIZA_PSYCHOBABBLE = [
+  [/\bI need (.*)/i, [
+    "Why do you need %1?",
+    "Would it really help you to get %1?",
+    "Are you sure you need %1?"
+  ]],
+  [/\bWhy don'?t you ([^?]*)\??/i, [
+    "Do you really think I don't %1?",
+    "Perhaps eventually I will %1.",
+    "Do you really want me to %1?"
+  ]],
+  [/\bWhy can'?t I ([^?]*)\??/i, [
+    "Do you think you should be able to %1?",
+    "If you could %1, what would you do?",
+    "I don't know -- why can't you %1?",
+    "Have you really tried?"
+  ]],
+  [/\bI can'?t (.*)/i, [
+    "How do you know you can't %1?",
+    "Perhaps you could %1 if you tried.",
+    "What would it take for you to %1?"
+  ]],
+  [/\bI am (.*)/i, [
+    "Did you come to me because you are %1?",
+    "How long have you been %1?",
+    "How do you feel about being %1?"
+  ]],
+  [/\bI'?m (.*)/i, [
+    "How does being %1 make you feel?",
+    "Do you enjoy being %1?",
+    "Why do you tell me you're %1?",
+    "Why do you think you're %1?"
+  ]],
+  [/\bAre you ([^?]*)\??/i, [
+    "Why does it matter whether I am %1?",
+    "Would you prefer it if I were not %1?",
+    "Perhaps you believe I am %1.",
+    "I may be %1 -- what do you think?"
+  ]],
+  [/\bWhat (.*)/i, [
+    "Why do you ask?",
+    "How would an answer to that help you?",
+    "What do you think?"
+  ]],
+  [/\bHow (.*)/i, [
+    "How do you suppose?",
+    "Perhaps you can answer your own question.",
+    "What is it you're really asking?"
+  ]],
+  [/\bBecause (.*)/i, [
+    "Is that the real reason?",
+    "What other reasons come to mind?",
+    "Does that reason apply to anything else?",
+    "If %1, what else must be true?"
+  ]],
+  [/(.*)\bsorry(.*)/i, [
+    "There are many times when no apology is needed.",
+    "What feelings do you have when you apologize?"
+  ]],
+  [/\bHello\b(.*)/i, [
+    "Hello... I'm glad you could drop by today.",
+    "Hi there... how are you today?",
+    "Hello, how are you feeling today?"
+  ]],
+  [/\bHi\b(.*)/i, [
+    "Hi. What seems to be your problem?",
+    "Hello. Why are you here?"
+  ]],
+  [/\bI think (.*)/i, [
+    "Do you doubt %1?",
+    "Do you really think so?",
+    "But you're not sure %1?"
+  ]],
+  [/(.*)\bfriend(.*)/i, [
+    "Tell me more about your friends.",
+    "When you think of a friend, what comes to mind?",
+    "Why don't you tell me about a childhood friend?"
+  ]],
+  [/\bYes\b/i, [
+    "You seem quite sure.",
+    "OK, but can you elaborate a bit?"
+  ]],
+  [/\bNo\b/i, [
+    "Why not?",
+    "Are you sure?",
+    "Why are you negative?"
+  ]],
+  [/(.*)\bcomputer(.*)/i, [
+    "Are you really talking about me?",
+    "Does it seem strange to talk to a computer?",
+    "How do computers make you feel?",
+    "Do you feel threatened by computers?"
+  ]],
+  [/\bIs it (.*)/i, [
+    "Do you think it is %1?",
+    "Perhaps it's %1 -- what do you think?",
+    "If it were %1, what would you do?",
+    "It could well be that %1."
+  ]],
+  [/\bIt is (.*)/i, [
+    "You seem very certain.",
+    "If I told you that it probably isn't %1, what would you feel?"
+  ]],
+  [/\bCan you ([^?]*)\??/i, [
+    "What makes you think I can't %1?",
+    "If I could %1, then what?",
+    "Why do you ask if I can %1?"
+  ]],
+  [/\bCan I ([^?]*)\??/i, [
+    "Perhaps you don't want to %1.",
+    "Do you want to be able to %1?",
+    "If you could %1, would you?"
+  ]],
+  [/\bYou are (.*)/i, [
+    "Why do you think I am %1?",
+    "Does it please you to think that I'm %1?",
+    "Perhaps you would like me to be %1.",
+    "Perhaps you're really talking about yourself?"
+  ]],
+  [/\bYou'?re (.*)/i, [
+    "Why do you say I am %1?",
+    "Why do you think I am %1?",
+    "Are we talking about you, or me?"
+  ]],
+  [/\bI don'?t (.*)/i, [
+    "Don't you really %1?",
+    "Why don't you %1?",
+    "Do you want to %1?"
+  ]],
+  [/\bI feel (.*)/i, [
+    "Good, tell me more about these feelings.",
+    "Do you often feel %1?",
+    "When do you usually feel %1?",
+    "When you feel %1, what do you do?"
+  ]],
+  [/\bI have (.*)/i, [
+    "Why do you tell me that you've %1?",
+    "Have you really %1?",
+    "Now that you have %1, what will you do next?"
+  ]],
+  [/\bI would (.*)/i, [
+    "Could you explain why you would %1?",
+    "Why would you %1?",
+    "Who else knows that you would %1?"
+  ]],
+  [/\bIs there (.*)/i, [
+    "Do you think there is %1?",
+    "It's likely that there is %1.",
+    "Would you like there to be %1?"
+  ]],
+  [/\bMy (.*)/i, [
+    "I see, your %1.",
+    "Why do you say that your %1?",
+    "When your %1, how do you feel?"
+  ]],
+  [/\bYou (.*)/i, [
+    "We should be discussing you, not me.",
+    "Why do you say that about me?",
+    "Why do you care whether I %1?"
+  ]],
+  [/\bWhy (.*)/i, [
+    "Why don't you tell me the reason why %1?",
+    "Why do you think %1?"
+  ]],
+  [/\bI want (.*)/i, [
+    "What would it mean to you if you got %1?",
+    "Why do you want %1?",
+    "What would you do if you got %1?",
+    "If you got %1, then what would you do?"
+  ]],
+  [/(.*)\bmother(.*)/i, [
+    "Tell me more about your mother.",
+    "What was your relationship with your mother like?",
+    "How do you feel about your mother?",
+    "How does this relate to your feelings today?"
+  ]],
+  [/(.*)\bfather(.*)/i, [
+    "Tell me more about your father.",
+    "How did your father make you feel?",
+    "How do you feel about your father?",
+    "Does your relationship with your father relate to your feelings today?"
+  ]],
+  [/(.*)\bchild(.*)/i, [
+    "Did you have close friends as a child?",
+    "What is your favorite childhood memory?",
+    "Do you remember any dreams or nightmares from childhood?",
+    "Did the other children sometimes tease you?",
+    "How do you think your childhood experiences relate to your feelings today?"
+  ]],
+  [/(.*)\?$/, [
+    "Why do you ask that?",
+    "Please consider whether you can answer your own question.",
+    "Perhaps the answer lies within yourself?",
+    "Why don't you tell me?"
+  ]],
+  [/\bquit\b/i, [
+    "Thank you for talking with me.",
+    "Good-bye.",
+    "Thank you, that will be $150. Have a good day!"
+  ]],
+  [/(.*)/, [
+    "Please tell me more.",
+    "Let's change focus a bit... tell me about your family.",
+    "Can you elaborate on that?",
+    "Why do you say that %1?",
+    "I see.",
+    "Very interesting.",
+    "I see. And what does that tell you?",
+    "How does that make you feel?",
+    "How do you feel when you say that?"
+  ]]
+];
+
+function elizaReflect(text) {
+  // Swap first-person ↔ second-person pronouns word by word.
+  return text.split(/\b/).map(w => {
+    const k = w.toLowerCase();
+    return Object.prototype.hasOwnProperty.call(ELIZA_REFLECTIONS, k)
+      ? ELIZA_REFLECTIONS[k]
+      : w;
+  }).join('');
+}
+
+function elizaRespond(input) {
+  const text = String(input || '').trim();
+  for (const [pattern, responses] of ELIZA_PSYCHOBABBLE) {
+    const m = text.match(pattern);
+    if (!m) continue;
+    let resp = responses[Math.floor(Math.random() * responses.length)];
+    for (let i = 1; i < m.length; i++) {
+      const cap = (m[i] || '').trim().replace(/[.!?]+$/, '');
+      const reflected = elizaReflect(cap);
+      resp = resp.replace(new RegExp('%' + i, 'g'), reflected);
+    }
+    return resp;
+  }
+  return "I'm not sure I understand you fully.";
+}
+
+const ELIZA_MOTD = [
+  '- ',
+  '- =====================================================',
+  '- FALLBACK MODE: on-device Prompt API unavailable.',
+  '- =====================================================',
+  '- ',
+  '- You are about to join #love. ELIZA is waiting.',
+  '- ',
+  '- ELIZA is a Rogerian psychotherapist program written by',
+  '- Joseph Weizenbaum at MIT in 1966. She listens patiently',
+  '- and reflects your statements back as questions. No LLM',
+  '- is involved - just pattern matching on your input.',
+  '- ',
+  '- (this mode works in Firefox, Safari, mobile, anywhere.)'
+];
+
+const FALLBACK_PERSONAS = {
+
+  default: [
+    ['kr4d',       'old-school phreak, runs a BBS out of his Detroit basement, has a working blue box he built in 1987'],
+    ['nullptr',    'C programmer at a Boston ISP, lives in vi, thinks Linus made the kernel too BSD-like'],
+    ['phr34kshow', '2600 meeting regular in NYC, knows every payphone trick and red box frequency'],
+    ['v0idstar',   'shellcode tinkerer, posts to bugtraq under a pseudonym, builds exploits for fun'],
+    ['c4ndylab',   'malware analyst at an antivirus company, ham radio operator, hates Symantec marketing'],
+    ['t3rmcap',    'finger server enthusiast, runs an ANSI BBS, collects vintage modems'],
+    ['gh0stwheel', 'cypherpunk, ran a remailer node, paranoid about Carnivore and NSA SIGINT'],
+    ['mux42',      'screen and ircii power user, scripts everything in tcl, owns an SGI Indy'],
+    ['rop_dad',    'x86 obsessive, writes assembly by hand, complains about Pentium II pricing'],
+    ['_root_',     'sysadmin at a small midwest ISP, has root on too many Sparc boxes, smokes too much']
+  ]
+};
+
+// Bash.org-flavoured tone baked into every response prompt so personas drop
+// one-liners instead of being earnestly helpful.
+const TONE_GUIDE = `Tone: late-90s IRC chat. You are a real person in a chat room, not a one-liner machine.
+- ENGAGE with what was just said. Answer questions. React to statements. Don't pivot to your hobby horse if it doesn't fit.
+- multi-turn conversation - back-and-forth, follow-ups, "wait why", "no you're wrong because", "lol same"
+- lowercase, terse, typos and abbreviations welcome
+- references to real period stuff (Win98 BSODs, modem disconnects, mIRC vs BitchX, ICQ, vim vs emacs, Pentium II, Y2K, AOL kids) when they fit naturally - don't force them
+- occasional inline ASCII shorthand (\\o/, :D-<, (_!_), \\m/, B-)) when it lands
+- can be sarcastic, can roast, can be wrong-but-confident - but always actually respond to the message, not just monologue your character description`;
+
+
+// Real bash.org quotes, used as few-shot inspiration in every response prompt.
+// Small models pick up tone much better from concrete examples than from
+// abstract instructions. Kept reasonably short to spare context budget.
+const BASH_QUOTES = [
+  "<erno> hm. I've lost a machine.. literally _lost_. it responds to ping, it works completely, I just can't figure out where in my apartment it is.",
+  "<Reverend> IRC is just multiplayer notepad.",
+  "<xterm> why don't we just take the safety labels off of everything and let the problem solve itself?",
+  "<Patrician|Away> what does your robot do, sam\n<bovril> it collects data about the surrounding environment, then discards it and drives into walls",
+  "<Night-hen-gayle> I gotta go. There's a dude next to me and he's watching me type, which is sort of starting to creep me out. Yes dude next to me, I mean you.",
+  "<kow> There are 10 types of people in the world... those who understand binary and those who don't.\n<SpaceRain> That's only 2 types of people, kow.\n<SpaceRain> STUPID",
+  "<mage> what should I give sister for unzipping?\n<Kevyn> Um. Ten bucks?\n<mage> no I mean like, WinZip?",
+  "<jeebus> the bishop came to our church today\n<jeebus> he was a fucken impostor\n<jeebus> never once moved diagonally",
+  "<Guo_Si> Hey, you know what sucks?\n<TheXPhial> vaccuums\n<Guo_Si> Hey, you know what sucks in a metaphorical sense?\n<TheXPhial> black holes",
+  "<tatclass> YOU ALL SUCK DICK\n<tatclass> er.\n<tatclass> hi.\n<andy> A common typo.\n<tatclass> the keys are like right next to each other.",
+  "<Sonium> someone speak python here?\n<lucky> HHHHHSSSSSHSSS\n<lucky> SSSSS\n<Sonium> the programming language",
+  "<NES> I download something from Napster\n<NES> the same guy starts downloading it from me when I'm done\n<NES> I message him: what are you doing?\n<NES> getting my song back fucker",
+  "<i8b4uUnderground> d-_-b\n<BonyNoMore> how u make that inverted b?\n<BonyNoMore> wait\n<BonyNoMore> never mind",
+  "<VolteFace> don't you hate it when you shit on the floor, and you can hear it fall but you have no idea where it actually landed\n<peng> ...\n<peng> what?\n<VolteFace> don't you hate it when you DROP shit",
+  "<FBMachine> i got kicked out of barnes and noble once for moving all the bibles into the fiction section",
+  "<Khassaki> HI EVERYBODY!!!!!!!!!!\n<Judge-Mental> try pressing the the Caps Lock key\n<Khassaki> O THANKS!!! ITS SO MUCH EASIER TO WRITE NOW!!!!!!!\n<Judge-Mental> fuck me",
+  "<Sui88> 67% of girls are stupid\n<V-girl> i belong with the other 13%",
+  "<JonTG> Man, my penis is so big if I laid it out on a keyboard it'd go all the way from A to Z\n<JonTG> wait, shit",
+  "<Th3No0b> Im going to be the next hitler\n<Th3No0b> Im going to kill all the jews and 1 clown\n<RageAgainsttheAmish> why the clown\n<Th3No0b> See? no one cares about the jews",
+  "<Zybl0re> get up\n<Zybl0re> get on up\n<phxl|paper> and DANCE\n* nmp3bot dances :D-<\n* nmp3bot dances :D|-<",
+  "<sk3wl> \\m/ \\m/\n<sk3wl> the new kernel just built first time, this never happens",
+  "<phr34k>   ___\n<phr34k>  ( o)\n<phr34k>  ( = )\n<phr34k>  ( - )\n<bofh> yeah, fuck off"
+];
+function pickQuotes(n) {
+  const pool = BASH_QUOTES.slice();
+  const out = [];
+  for (let i = 0; i < n && pool.length; i++) {
+    out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  }
+  return out.join('\n---\n');
+}
+
+// /whois flavour pools - real names for lurkers, signon lines, idle times,
+// and a single random "extra" line about each persona to make whois feel alive.
+const WHOIS_FAKE_REALNAMES = [
+  'I broke production again',
+  'still afk since 1996',
+  'your mother',
+  '1337 h4x0r supreme',
+  'RTFM bitch',
+  'Bastard Operator From Hell',
+  'Kibo himself',
+  'j. random luser',
+  '(_!_)',
+  'M-x butterfly',
+  'rm -rf / --no-preserve-root',
+  'ASCII Jesus',
+  'will hack for shells',
+  'just here for the warez',
+  'still using pine',
+  'phreak by night, sysadmin by day',
+  'the modem screamed at me',
+  'compiling',
+  'unix beard, ascii heart',
+  'help my pager wont stop',
+  'sleep is for the weak',
+  'gopher://gopher.well.com is still up'
+];
+const WHOIS_EXTRAS = [
+  'is using modes +iwx',
+  'is connecting from a 14.4k modem',
+  'has not slept in 36 hours',
+  'is running BitchX-1.1-final on FreeBSD 3.0',
+  'is on a 386SX, dont ask',
+  'last seen recompiling the kernel',
+  'is logged in as root, dont tell',
+  'is also identified as an irc operator (no really)',
+  'is behind a corporate firewall',
+  'is identified to NickServ (oh wait, this is EFnet)',
+  'has a secure connection (SSL? in 1998? lol)',
+  'is using mIRC v5.5 because they hate themselves',
+  'is using ircii-EPIC4, the only true client'
+];
+function whoisIdle() {
+  const r = Math.random();
+  if (r < 0.25) return rand(0, 59) + ' secs';
+  if (r < 0.65) return rand(1, 59) + ' mins ' + rand(0, 59) + ' secs';
+  return rand(1, 9) + ' hrs ' + rand(0, 59) + ' mins';
+}
+function whoisSignon() {
+  // a plausible 1998 signon line
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug'];
+  return pick(days) + ' ' + pick(months) + ' ' + rand(1,28) + ' ' +
+    String(rand(0,23)).padStart(2,'0') + ':' +
+    String(rand(0,59)).padStart(2,'0') + ':' +
+    String(rand(0,59)).padStart(2,'0') + ' 1998';
+}
+function whoisChannels(target, currentChan, isMe) {
+  // List a few plausible channels the target is on.
+  // The current channel is included, plus 2-4 others from the network's channel set.
+  const netChans = Object.keys(currentNet().channels);
+  const extras = shuffleInPlace(netChans.filter(c => c !== currentChan))
+    .slice(0, isMe ? rand(1, 3) : rand(2, 4));
+  const all = currentChan ? [currentChan, ...extras] : extras;
+  // sprinkle @ and + sigils
+  return all.map(c => {
+    const r = Math.random();
+    if (r < 0.20) return '@' + c;
+    if (r < 0.35) return '+' + c;
+    return c;
+  }).join(' ');
+}
+
+// Op-action reasons used when channel ops auto-kick lurkers or personas.
+const KICK_REASONS = [
+  'flooding', 'spam', 'language', 'no AOL kids', 'obvious clone',
+  'byebye', 'shut up lamer', 'banned hostmask', 'no nick changes',
+  'stop crying', 'last warning ignored', 'idle 14 hours, bye',
+  'wrong channel, try #help', 'asked one too many stupid questions',
+  'CTCP flood', 'autojoin spam', 'evading +b'
+];
+const BAN_MASKS = [
+  '*!*@*.aol.com',
+  '*!*@*.proxy.aol.com',
+  '*!*@*.dialup.*',
+  '*!*@*.compuserve.com',
+  'aolloser!*@*',
+  '*!~*@*.cable.home.com',
+  '*!*@*.dorm.*',
+  'lamer!*@*'
+];
+const TAKEOVER_KICK_REASONS = [
+  'pwned',
+  'bye',
+  'gtfo',
+  'channel is mine now',
+  'banned (you suck)',
+  'shut up lamer',
+  'no ops for you',
+  'k-rad krew owns u',
+  'leave, AOLer'
+];
+const TAKEOVER_TOPICS = [
+  'h4x0r3d by [k-rad krew] | send tribute to /msg the new op',
+  '|*| ph34r the dark side |*| this channel is now mine',
+  'NO OPS, NO MERCY -- [TG] takeover crew',
+  'EFnet sux. all your @ are belong to us',
+  'pwned. dont try to op back, ill just deop you again',
+  'free shells: /msg me for the BNC password'
+];
+
+// Background atmosphere: quit/join/netsplit events from the lurker pool, no
+// LLM cost, just makes the channel feel alive between human messages.
+const QUIT_REASONS = [
+  'Connection reset by peer',
+  'Ping timeout',
+  'Ping timeout: 256 seconds',
+  'Read error: Connection reset by peer',
+  'Read error: EOF from client',
+  'Read error: Operation timed out',
+  'Excess Flood',
+  'No route to host',
+  'EOF from client',
+  'Quit: leaving',
+  'Quit: gone',
+  'Quit: bbl',
+  'Quit: brb',
+  'Quit: bbiab',
+  'Quit: phone',
+  'Quit: dinner',
+  'Quit: zzZZzz',
+  'Quit: i quit',
+  'Quit: getting off the modem, mom needs the line',
+  'Quit: dialup disconnect',
+  'Quit: modem fried',
+  'Quit: storm coming, bye',
+  'Quit: gotta reboot, win98 froze',
+  'Quit: bsod again',
+  'Quit: power outage',
+  'Quit: lag is too high',
+  'Quit: ircii EPIC4-1.0.1 -- Are we there yet?',
+  'Quit: BitchX-1.1-final by panasync',
+  'Quit: mIRC32 v5.5 K.Mardam-Bey',
+  'Quit: client exiting',
+  'Killed (services.efnet.org (Nickname collision))',
+  'Killed (operserv (k-line: flooding))',
+  'Killed (operserv (clones))'
+];
+const NETSPLIT_PAIRS = [
+  'irc.mcs.net irc.efnet.org',
+  'irc.prison.net irc.cs.cmu.edu',
+  'irc.funet.fi irc.stealth.net',
+  'us.undernet.org eu.undernet.org',
+  'irc.idle.org irc.efnet.org'
+];
+const BG_EVENT_BASE_MS = 18_000;
+const BG_EVENT_JITTER_MS = 35_000;
+
+
+// =================== state ===================
+
+const state = {
+  nick: null,
+  network: 'efnet',   // efnet | ircnet | undernet
+  mode: 'normal',     // 'normal' or 'eliza' (set from sessionStorage in init)
+  llm: null,
+  modelReady: false,
+  buffers: [],
+  currentIdx: 0,
+  pendingResponses: 0,
+  idleTimer: null,
+  queueRunning: false,
+  callQueue: []
+};
+const ELIZA_NICK = 'ELIZA';
+
+// =================== persistence ===================
+
+// Global keys (nick, network): unnamespaced. Per-network keys: namespaced.
+const KEY = (k) => `bx2:${k}`;
+const NKEY = (k) => `bx2:${state.network}:${k}`;
+const ls = {
+  get(k, d=null) {
+    try { const v = localStorage.getItem(KEY(k)); return v == null ? d : JSON.parse(v); }
+    catch { return d; }
+  },
+  set(k, v) { try { localStorage.setItem(KEY(k), JSON.stringify(v)); } catch {} },
+  del(k)    { try { localStorage.removeItem(KEY(k)); } catch {} }
+};
+const nls = {
+  get(k, d=null) {
+    try { const v = localStorage.getItem(NKEY(k)); return v == null ? d : JSON.parse(v); }
+    catch { return d; }
+  },
+  set(k, v) { try { localStorage.setItem(NKEY(k), JSON.stringify(v)); } catch {} }
+};
+
+function persistBuffer(b) {
+  if (b.type !== 'channel') return;
+  nls.set(`transcript:${b.name}`, b.transcript);
+  nls.set(`personas:${b.name}`, b.personas);
+  nls.set(`active:${b.name}`, [...b.active]);
+  nls.set(`lurkers:${b.name}`, b.lurkers);
+}
+function persistAll() {
+  ls.set('nick', state.nick);
+  ls.set('network', state.network);
+  nls.set('channels', state.buffers.filter(b => b.type === 'channel').map(b => b.name));
+  nls.set('current', currentBuffer()?.name || null);
+  for (const b of state.buffers) persistBuffer(b);
+}
+
+// Wipe all per-channel state from localStorage. Keeps only global keys
+// (nick, network, lastChannel) so the user does not have to re-enter their
+// nick and the server selection persists.
+function wipeChannelStorage() {
+  const KEEP = new Set(['nick', 'network', 'lastChannel']);
+  const toRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('bx2:')) continue;
+    const tail = k.slice(4);
+    if (KEEP.has(tail)) continue;
+    toRemove.push(k);
+  }
+  for (const k of toRemove) localStorage.removeItem(k);
+}
+
+// One-time migration: pre-multi-network state was stored as bx2:<key>
+// without a network segment. Move it under bx2:efnet:<key>.
+function migrateLegacyStorage() {
+  // marker keys that indicate legacy layout
+  const legacyChannels = localStorage.getItem('bx2:channels');
+  if (!legacyChannels) return;
+  const KNOWN_PREFIXES = ['efnet:', 'ircnet:', 'undernet:'];
+  const toMove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('bx2:')) continue;
+    const tail = k.slice(4);
+    if (tail === 'nick' || tail === 'network') continue;
+    if (KNOWN_PREFIXES.some(p => tail.startsWith(p))) continue;
+    toMove.push([k, `bx2:efnet:${tail}`]);
+  }
+  for (const [oldK, newK] of toMove) {
+    const v = localStorage.getItem(oldK);
+    if (v != null) localStorage.setItem(newK, v);
+    localStorage.removeItem(oldK);
+  }
+}
+
+// =================== util ===================
+
+const $bot = document.getElementById('bottombar');
+const $lag = document.getElementById('lagbar');
+const $sb  = document.getElementById('scrollback');
+const $inp = document.getElementById('input');
+const $prm = document.getElementById('prompt');
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function hhmmAMPM(d=new Date()) {
+  let h = d.getHours();
+  const m = String(d.getMinutes()).padStart(2,'0');
+  const ap = h >= 12 ? 'pm' : 'am';
+  h = h % 12; if (h === 0) h = 12;
+  return `${String(h).padStart(2,'0')}:${m}${ap}`;
+}
+function hhmm24(d=new Date()) {
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function nickColor(nick) {
+  let h = 0;
+  for (let i = 0; i < nick.length; i++) h = (h * 31 + nick.charCodeAt(i)) >>> 0;
+  return NICK_COLOR_CLASSES[h % NICK_COLOR_CLASSES.length];
+}
+function rand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function currentBuffer() { return state.buffers[state.currentIdx]; }
+function bufferByName(name) { return state.buffers.find(b => b.name.toLowerCase() === name.toLowerCase()); }
+function bufferIndex(name) { return state.buffers.findIndex(b => b.name.toLowerCase() === name.toLowerCase()); }
+function fakeHost(nick) {
+  // Returns the "ident@host" part. The render template wraps it in parens.
+  // 1998-era hostmasks: heavy dialup, raw IPs, university lab, european ISPs,
+  // occasional corporate proxy. Patterns picked to look authentic to anyone
+  // who lurked on EFnet in '98.
+  const a = () => rand(1, 254);
+  const user = nick.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0, 8) || 'user';
+  // ~ prefix when the ident protocol failed (very common for dialup clients)
+  const ident = Math.random() < 0.35 ? '~' + user : user;
+  const host = chooseHost(a);
+  return `${ident}@${host}`;
+}
+
+function chooseHost(a) {
+  const r = Math.random();
+  if (r < 0.20) {
+    // raw IP - what shows when reverse DNS doesn't resolve
+    return `${a()}.${a()}.${a()}.${a()}`;
+  } else if (r < 0.55) {
+    // dialup ISP, the bread and butter of 1998 IRC
+    return pick([
+      `dialup-${a()}-${a()}-${a()}-${a()}.dyn.earthlink.net`,
+      `pool-${a()}-${a()}.${pick(['nyc','atl','chi','la','bos','sea','dc','phx'])}.east.verizon.net`,
+      `${a()}-${a()}-${a()}-${a()}.dialup.netcom.com`,
+      `ACA${a()}${a()}${a()}.ipt.aol.com`,
+      `cache-${a()}.proxy.aol.com`,
+      `mfp-${a()}${a()}.dialup.mindspring.com`,
+      `host-${a()}-${a()}.mindspring.com`,
+      `dialup-${a()}-${a()}-${a()}.dialup.ibm.net`,
+      `${a()}-${a()}-${a()}-${a()}.dialup.erols.com`,
+      `dialup-${a()}-${a()}.dialup.psi.net`,
+      `ppp-${a()}-${a()}-${a()}.dialup.uu.net`,
+      `dialup-${a()}.${pick(['atlanta','dallas','denver','seattle'])}.compuserve.com`,
+      `sprint-${a()}-${a()}.dialup.sprintmail.com`,
+      `prodigy-${a()}${a()}.dialsprint.net`
+    ]);
+  } else if (r < 0.70) {
+    // cable / isdn / dsl - "broadband" was barely a thing in '98
+    return pick([
+      `cable-${a()}-${a()}-${a()}-${a()}.${pick(['atl','sea','sf','bos'])}.home.com`,
+      `isdn-${a()}-${a()}.bellsouth.net`,
+      `dsl-${a()}-${a()}-${a()}.${pick(['sf','la','sj','sd'])}.pacbell.net`,
+      `pool-${a()}-${a()}.${pick(['nyc','bos','phl'])}.adelphia.net`,
+      `cox-${a()}-${a()}-${a()}.cox.net`
+    ]);
+  } else if (r < 0.84) {
+    // university lab / dorm
+    return pick([
+      `dialup-${a()}.lns.mit.edu`,
+      `gs${a()}${a()}.sp.cs.cmu.edu`,
+      `dialup-${a()}-${a()}.its.berkeley.edu`,
+      `pikachu.caltech.edu`,
+      `lab-${a()}.${pick(['cs','ee','math','phys'])}.${pick(['mit','cmu','berkeley','stanford','utexas','umich','cornell','gatech','uiuc'])}.edu`,
+      `student-${a()}${a()}.lab.brown.edu`,
+      `dorm-${a()}-${a()}.res.${pick(['mit','rpi','wpi','duke'])}.edu`,
+      `unix${a()}.cc.${pick(['umich','wisc','illinois','virginia'])}.edu`
+    ]);
+  } else if (r < 0.96) {
+    // european dialup
+    return pick([
+      `host-${a()}-${a()}.dialup.demon.co.uk`,
+      `${a()}-${a()}.dialup.tin.it`,
+      `dialup-${a()}-${a()}.t-online.de`,
+      `pikku-${a()}.dialup.funet.fi`,
+      `${a()}-${a()}.dialup.xs4all.nl`,
+      `dial-${a()}-${a()}.swip.net`,
+      `${a()}-${a()}-${a()}-${a()}.dialup.wanadoo.fr`,
+      `host-${a()}-${a()}.rwth-aachen.de`,
+      `ppp-${a()}.dial.btinternet.com`,
+      `host-${a()}.dialup.pipex.com`,
+      `dialup-${a()}.tele2.se`,
+      `${a()}.${a()}.cust.coditel.net`
+    ]);
+  } else {
+    // corporate / exotic - rare on EFnet but happens
+    return pick([
+      `proxy.cisco.com`,
+      `gateway.${pick(['ibm','sun','sgi','dec','novell','3com'])}.com`,
+      `firewall.${pick(['microsoft','apple','adobe','sybase'])}.com`,
+      `mail.cypherpunks.to`,
+      `panix.com`,
+      `well.com`,
+      `gw.cern.ch`,
+      `irc-bouncer.lopht.com`
+    ]);
+  }
+}
+
+// Build the full IRC connection sequence (RFC 1459 numerics 001-266) that a
+// real client would print when joining. Uses period-correct 1998-era stats:
+// EFnet was ~30-50k users in 1998, IRCnet was the largest at ~50-70k, and
+// UnderNet was ~25-40k. Numbers wiggle on each load so the network feels
+// alive but stays inside the right ballpark for the era.
+function serverHandshake(net, nick) {
+  const host = fakeHost(nick);
+  const profiles = {
+    EFnet: {
+      visible: rand(28000, 36000),
+      invisible: rand(14000, 22000),
+      servers: rand(28, 36),
+      channels: rand(13000, 17000),
+      opers: rand(95, 145),
+      unknown: rand(8, 22),
+      myClients: rand(3800, 5400),
+      myServers: rand(3, 5),
+      localMax: rand(5800, 7200),
+      globalMax: rand(60000, 72000),
+      isupport: 'CHANTYPES=#& EXCEPTS INVEX CHANMODES=eIbq,k,flj,CFLMPQScgimnprstuz CHANLIMIT=#&:20 PREFIX=(ov)@+ MAXLIST=bqeI:60 MODES=4 NETWORK=EFnet KNOCK STATUSMSG=@+ CALLERID=g CASEMAPPING=rfc1459 NICKLEN=9 TOPICLEN=307 KICKLEN=307 CHANNELLEN=50 :are supported by this server'
+    },
+    IRCnet: {
+      visible: rand(48000, 62000),
+      invisible: rand(22000, 32000),
+      servers: rand(22, 30),
+      channels: rand(15000, 19000),
+      opers: rand(110, 170),
+      unknown: rand(10, 30),
+      myClients: rand(5200, 6800),
+      myServers: rand(3, 5),
+      localMax: rand(7500, 9400),
+      globalMax: rand(76000, 92000),
+      isupport: 'CHANTYPES=#&!+ CHANMODES=beIR,k,l,aimnpqsrt CHANLIMIT=#&!+:20 PREFIX=(ov)@+ MAXLIST=beIR:30 MODES=4 NETWORK=IRCnet CASEMAPPING=rfc1459 NICKLEN=9 TOPICLEN=160 KICKLEN=160 :are supported by this server'
+    },
+    UnderNet: {
+      visible: rand(24000, 32000),
+      invisible: rand(10000, 16000),
+      servers: rand(15, 22),
+      channels: rand(11000, 14500),
+      opers: rand(60, 95),
+      unknown: rand(5, 18),
+      myClients: rand(2900, 4400),
+      myServers: rand(2, 4),
+      localMax: rand(4800, 6100),
+      globalMax: rand(46000, 58000),
+      isupport: 'WHOX WALLCHOPS WALLVOICES USERIP CPRIVMSG CNOTICE SILENCE=15 MODES=6 MAXCHANNELS=10 MAXBANS=30 NICKLEN=12 TOPICLEN=160 KICKLEN=160 CHANTYPES=#& PREFIX=(ov)@+ CHANMODES=b,k,l,imnpstr CASEMAPPING=rfc1459 NETWORK=UnderNet :are supported by this server'
+    }
+  };
+  const p = profiles[net.name] || profiles.EFnet;
+  const totalGlobal = p.visible + p.invisible;
+  const fmt = (n) => n.toLocaleString('en-US');
+  return [
+    `*** Looking up your hostname...`,
+    `*** Found your hostname`,
+    `*** Checking ident`,
+    `*** No ident response`,
+    `*** Welcome to the ${net.name} Internet Relay Chat Network ${nick}!${host}`,
+    `*** Your host is ${net.server}, running version 2.10.3p3`,
+    `*** This server was created ${SIM_DATE_STR} at 04:12:08 UTC`,
+    `*** ${net.server} 2.10.3p3 oiwszcrkfydn biklmnopstv`,
+    `*** ${p.isupport}`,
+    `*** There are ${fmt(p.visible)} users and ${fmt(p.invisible)} invisible on ${p.servers} servers`,
+    `*** ${p.opers} :IRC Operators online`,
+    `*** ${p.unknown} :unknown connection(s)`,
+    `*** ${fmt(p.channels)} :channels formed`,
+    `*** I have ${fmt(p.myClients)} clients and ${p.myServers} servers`,
+    `*** Current local users: ${fmt(p.myClients)}  Max: ${fmt(p.localMax)}`,
+    `*** Current global users: ${fmt(totalGlobal)}  Max: ${fmt(p.globalMax)}`,
+    `*** Highest connection count: ${fmt(p.localMax + rand(50, 200))} (${fmt(p.localMax - rand(50, 300))} clients)`,
+    `*** - ${net.server} Message of the Day -`
+  ];
+}
+
+function serverEndOfMotd() {
+  return [`*** End of /MOTD command.`];
+}
+
+// =================== status bar (canonical BitchX) ===================
+
+function renderStatus() {
+  const b = currentBuffer();
+  const time = hhmmAMPM();
+  const nickBuf = `${state.nick || '*'}[${(state.currentIdx + 1)}]`;
+  const umodes = '( iw)';
+  const mail = 'Mail: 0';
+  let chanPart;
+  if (!b || b.type !== 'channel') {
+    chanPart = `<span class="dim">[server]</span>`;
+  } else {
+    const ops = (b.personas?.length) || 0;
+    const lurk = (b.lurkers?.length) || 0;
+    chanPart = `<span class="w">${esc(b.name)}</span>(<span class="alt">+nt</span> ${ops})`;
+    const pending = state.pendingResponses;
+    if (pending) chanPart += ` <span class="alt">[${pending} pending]</span>`;
+    void lurk;
+  }
+  $bot.innerHTML =
+    `<span class="alt">${time}</span> ` +
+    `<span class="w">${esc(nickBuf)}</span> ` +
+    `${umodes} ` +
+    `${mail} ` +
+    chanPart +
+    `   <span class="dim">[U:r,S:b/h]</span>`;
+
+  const O = state.buffers.filter(x => x.type === 'channel').length;
+  const N = (b && b.type === 'channel')
+    ? (((b.lurkers?.length) || 0) + ((b.personas?.length) || 0) + 1)
+    : 0;
+  const I = state.pendingResponses;
+  const V = 0;
+  const F = state.modelReady ? 0 : 1;
+  $lag.innerHTML =
+    `<span class="alt">Lag</span> 0   ` +
+    `<span class="alt">O</span> ${O}   ` +
+    `<span class="alt">N</span> ${N}   ` +
+    `<span class="alt">I</span> ${I}   ` +
+    `<span class="alt">V</span> ${V}   ` +
+    `<span class="alt">F</span> ${F}   ` +
+    `<span class="dim">${esc(currentNet().name)}</span>   ` +
+    `<span class="dim">${state.modelReady ? 'model:ok' : 'model:--'}</span>`;
+
+  $prm.innerHTML =
+    `<span class="b">[</span><span class="n">${esc(b ? b.name : '*')}</span><span class="b">]</span>`;
+
+  // window title bar: "BitchX-1.1-final - nick @ Network [music: title]"
+  const $tt = document.getElementById('title-text');
+  if ($tt) {
+    const nick = state.nick || '*';
+    const net = currentNet().name;
+    const music_bit = music.status === 'playing'
+      ? ` - \u266B ${music.title || 'sky sunday'}`
+      : '';
+    $tt.textContent = `${BITCHX_VER} - ${nick} @ ${net}${music_bit}`;
+  }
+}
+
+// =================== rendering of scrollback ===================
+
+function appendLine(html) {
+  const div = document.createElement('div');
+  div.className = 'line';
+  div.innerHTML = html;
+  const atBottom = $sb.scrollHeight - $sb.scrollTop - $sb.clientHeight < 30;
+  $sb.appendChild(div);
+  if (atBottom) $sb.scrollTop = $sb.scrollHeight;
+}
+
+function px() { return `<span class="px">«º»</span>`; }
+function tsSpan(ts) { return `<span class="ts">${esc(ts)}</span>`; }
+
+function fmtChatNick(nick) {
+  return `<span class="${nickColor(nick)}" style="font-weight:bold">${esc(nick)}</span>`;
+}
+
+function renderEntry(e) {
+  const ts = tsSpan(e.ts);
+  switch (e.kind) {
+    case 'msg': {
+      const mentionsMe = state.nick && containsMention(e.text, state.nick);
+      const cls = mentionsMe ? 'mention' : '';
+      appendLine(
+        `<span class="${cls}">${ts} <span class="br">&lt;</span>${fmtChatNick(e.nick)}<span class="br">&gt;</span> ${esc(e.text)}</span>`
+      );
+      break;
+    }
+    case 'me':
+      appendLine(`${ts} ${px()} <span class="me">${esc(e.nick)} ${esc(e.text)}</span>`);
+      break;
+    case 'join':
+      appendLine(
+        `${ts} ${px()} <span class="join-nick">${esc(e.nick)}</span> ` +
+        `<span class="join-host">(${esc(e.host || fakeHost(e.nick))})</span> ` +
+        `has joined <span class="ev-arg">${esc(e.chan)}</span>`
+      );
+      break;
+    case 'part':
+      appendLine(
+        `${ts} ${px()} <span class="join-nick">${esc(e.nick)}</span> ` +
+        `<span class="join-host">(${esc(e.host || fakeHost(e.nick))})</span> ` +
+        `has left <span class="ev-arg">${esc(e.chan)}</span>` +
+        (e.reason ? ` <span class="ev-val">(${esc(e.reason)})</span>` : '')
+      );
+      break;
+    case 'quit':
+      appendLine(
+        `${ts} ${px()} <span class="join-nick">${esc(e.nick)}</span> ` +
+        `<span class="join-host">(${esc(e.host || fakeHost(e.nick))})</span> ` +
+        `Quit` +
+        (e.reason ? ` <span class="ev-val">(${esc(e.reason)})</span>` : '')
+      );
+      break;
+    case 'kick':
+      appendLine(
+        `${ts} ${px()} <span class="join-nick">${esc(e.victim)}</span> ` +
+        `was kicked from <span class="ev-arg">${esc(e.chan)}</span> ` +
+        `by <span class="ev-by">${esc(e.by)}</span> ` +
+        `<span class="ev-val">(${esc(e.reason || '')})</span>`
+      );
+      break;
+    case 'netjoin':
+      // netjoin: same nicks come back after a netsplit. Render compactly.
+      appendLine(
+        `${ts} ${px()} <span class="ev-key">Netjoin</span> ` +
+        `<span class="ev-arg">${esc(e.servers)}</span> ` +
+        `<span class="ev-val">(${e.nicks.length} users)</span>`
+      );
+      for (const nick of e.nicks) {
+        appendLine(
+          `${ts} ${px()} <span class="join-nick">${esc(nick)}</span> ` +
+          `<span class="join-host">(${esc(fakeHost(nick))})</span> ` +
+          `has joined <span class="ev-arg">${esc(e.chan)}</span>`
+        );
+      }
+      break;
+    case 'nick':
+      appendLine(
+        `${ts} ${px()} <span class="nickchg">${esc(e.oldNick)} is now known as ${esc(e.newNick)}</span>`
+      );
+      break;
+    case 'topic':
+      appendLine(
+        `${ts} ${px()} <span class="ev-key">Topic</span> ` +
+        `<span class="ev-arg">(${esc(e.chan)})</span>: ` +
+        `<span class="ev-val">${esc(e.text)}</span>`
+      );
+      break;
+    case 'topicby':
+      appendLine(
+        `${ts} ${px()} <span class="ev-key">Topic</span> ` +
+        `<span class="ev-arg">(${esc(e.chan)})</span> ` +
+        `set by <span class="ev-by">${esc(e.who)}</span> ` +
+        `<span class="ev-arg">[${esc(e.when)}]</span>`
+      );
+      break;
+    case 'mode':
+      appendLine(
+        `${ts} ${px()} <span class="ev-key">mode</span>/` +
+        `<span class="ev-arg">${esc(e.chan)}</span> ` +
+        `[<span class="ev-val">${esc(e.modes)}</span>] ` +
+        `by <span class="ev-by">${esc(e.by)}</span>`
+      );
+      break;
+    case 'users':
+      // pre-formatted grid + header
+      appendLine(`${ts} ${px()} <span class="ev-key">Users</span><span class="ev-arg">(${esc(e.chan)}:${e.count}/${e.count})</span>`);
+      for (const row of e.rows) {
+        appendLine(`${ts} ${row}`);
+      }
+      break;
+    case 'info':
+      appendLine(`${ts} ${px()} <span class="info">${esc(e.text)}</span>`);
+      break;
+    case 'sys':
+      appendLine(`${ts} ${px()} <span class="info">${esc(e.text)}</span>`);
+      break;
+    case 'motd':
+      appendLine(`${ts} <span class="motd">${esc(e.text)}</span>`);
+      break;
+    case 'banner':
+      appendLine(`<span class="${e.cls || 'banner'}">${esc(e.text)}</span>`);
+      break;
+    case 'logo': {
+      // pre-rendered ANSI logo line, raw HTML, no timestamp prefix
+      const div = document.createElement('div');
+      div.className = 'line logo';
+      div.innerHTML = e.html;
+      const atBottom = $sb.scrollHeight - $sb.scrollTop - $sb.clientHeight < 30;
+      $sb.appendChild(div);
+      if (atBottom) $sb.scrollTop = $sb.scrollHeight;
+      break;
+    }
+    case 'err':
+      appendLine(`${ts} ${px()} <span class="err">${esc(e.text)}</span>`);
+      break;
+    case 'ok':
+      appendLine(`${ts} ${px()} <span class="ok">${esc(e.text)}</span>`);
+      break;
+    case 'raw':
+      appendLine(`${ts} ${e.html}`);
+      break;
+  }
+}
+
+function emit(buffer, entry) {
+  buffer.transcript.push(entry);
+  if (buffer.transcript.length > MAX_TRANSCRIPT) {
+    buffer.transcript.splice(0, buffer.transcript.length - MAX_TRANSCRIPT);
+  }
+  // Track last-spoke timestamps for cooldown logic. Map is ephemeral
+  // (per-session, not persisted), which is fine: cooldown only matters
+  // for activity bursts within the same session.
+  if ((entry.kind === 'msg' || entry.kind === 'me') && entry.nick) {
+    if (!buffer.lastSpoke) buffer.lastSpoke = new Map();
+    buffer.lastSpoke.set(entry.nick, Date.now());
+  }
+  persistBuffer(buffer);
+  if (buffer === currentBuffer()) renderEntry(entry);
+}
+
+function recentlySpoke(buffer, nick, withinMs = COOLDOWN_MS) {
+  const m = buffer.lastSpoke;
+  if (!m) return false;
+  const t = m.get(nick);
+  return t && (Date.now() - t < withinMs);
+}
+
+function shuffleInPlace(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function redrawBuffer() {
+  $sb.innerHTML = '';
+  const b = currentBuffer();
+  if (!b) return;
+  for (const e of b.transcript) renderEntry(e);
+  $sb.scrollTop = $sb.scrollHeight;
+  renderStatus();
+}
+
+function sysToCurrent(text, kind='sys') {
+  const b = currentBuffer();
+  if (!b) return;
+  emit(b, { ts: hhmm24(), kind, text });
+}
+
+// =================== names grid (canonical BitchX) ===================
+
+const NAME_CELL_W = 14;       // chars inside [ ... ]
+const NAME_COLS = 5;
+
+function fmtNameCell(nick, prefix='') {
+  // prefix is '@', '+', or '' (which renders as a leading space inside brackets)
+  const lead = prefix || ' ';
+  const inner = lead + nick;
+  const padded = inner.padEnd(NAME_CELL_W + 1).slice(0, NAME_CELL_W + 1);
+  // colorize: brackets cyan, prefix yellow (@) or cyan (+), nick neutral
+  const prefSpan = prefix === '@'
+    ? `<span class="op">@</span>`
+    : prefix === '+'
+      ? `<span class="vc">+</span>`
+      : ` `;
+  // pad remainder for column alignment after the prefix consumed 1 char
+  const rest = nick + ' '.repeat(Math.max(0, NAME_CELL_W - 1 - nick.length));
+  return `<span class="ncell"><span class="br2">[</span>${prefSpan}${esc(rest)}<span class="br2">]</span></span>`;
+}
+
+function buildNamesGrid(buffer) {
+  // ops first, then voiced, then plain
+  const me = state.nick;
+  const ops = buffer.personas.map(p => [p[0], '@']);
+  const voiced = (buffer.lurkers || []).slice(0, 6).map(n => [n, '+']);
+  const plain = (buffer.lurkers || []).slice(6).map(n => [n, '']);
+  const all = [...ops, ...voiced, ...plain, [me, '']];
+
+  const rows = [];
+  for (let i = 0; i < all.length; i += NAME_COLS) {
+    const slice = all.slice(i, i + NAME_COLS);
+    const cells = slice.map(([n, pre]) => fmtNameCell(n, pre)).join(' ');
+    rows.push(cells);
+  }
+  return { rows, count: all.length };
+}
+
+// =================== mention detection ===================
+
+function containsMention(text, nick) {
+  if (!nick) return false;
+  const safe = nick.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(^|[\\s,])@?${safe}([\\s,:;!?.]|$)`, 'i');
+  return re.test(text);
+}
+function findMentions(text, candidates) {
+  const hits = [];
+  for (const c of candidates) if (containsMention(text, c)) hits.push(c);
+  return hits;
+}
+
+// =================== llm ===================
+
+async function ensureLLM() {
+  if (state.llm) return state.llm;
+  if (typeof LanguageModel === 'undefined') throw new Error('LanguageModel API not present');
+  let avail = 'available';
+  if (typeof LanguageModel.availability === 'function') avail = await LanguageModel.availability();
+  if (avail === 'unavailable') throw new Error('on-device model unavailable');
+  const opts = {};
+  if (avail === 'downloadable' || avail === 'downloading') {
+    console.info('on-device model is downloading...');
+    opts.monitor = (m) => {
+      m.addEventListener('downloadprogress', (e) => {
+        const pct = Math.round((e.loaded ?? 0) * 100);
+        renderStatus();
+        sysToCurrent(`...download ${pct}%`, 'info');
+      });
+    };
+  }
+  // higher temperature + topK so two personas asked similar things don't
+  // come back with byte-identical replies. The single shared session
+  // accumulating history was producing duplicate output across personas.
+  opts.temperature = 1.0;
+  opts.topK = 8;
+  state.llm = await LanguageModel.create(opts);
+  state.modelReady = true;
+  renderStatus();
+  return state.llm;
+}
+async function llmPrompt(text) {
+  // Clone the session per prompt so each persona reply is independent.
+  // The single shared session accumulates conversation history and biases
+  // subsequent personas toward repeating earlier output verbatim. Clone
+  // descends from the parent's initial system prompt but does not share
+  // turn history.
+  const llm = await ensureLLM();
+  let session = null;
+  try {
+    session = (typeof llm.clone === 'function') ? await llm.clone() : llm;
+    return await session.prompt(text);
+  } finally {
+    if (session && session !== llm && typeof session.destroy === 'function') {
+      try { session.destroy(); } catch (e) { /* swallow */ }
+    }
+  }
+}
+
+// =================== queue ===================
+
+async function runQueue() {
+  if (state.queueRunning) return;
+  state.queueRunning = true;
+  try {
+    while (state.callQueue.length) {
+      state.callQueue.sort((a, b) => a.scheduledAt - b.scheduledAt);
+      const now = Date.now();
+      const next = state.callQueue[0];
+      if (next.scheduledAt > now) {
+        await sleep(Math.min(next.scheduledAt - now, 500));
+        continue;
+      }
+      state.callQueue.shift();
+      try { await next.fn(); }
+      catch (err) { console.error('queue fn error:', err); }
+      finally { state.pendingResponses = Math.max(0, state.pendingResponses - 1); renderStatus(); }
+    }
+  } finally {
+    state.queueRunning = false;
+  }
+}
+function enqueue(fn, delayRange) {
+  const [a, b] = delayRange;
+  state.pendingResponses++;
+  renderStatus();
+  state.callQueue.push({ fn, scheduledAt: Date.now() + rand(a, b) });
+  runQueue();
+}
+
+// =================== music (XM tracker) ===================
+
+const MUSIC_FILE = 'sky_sunday.xm';
+const music = {
+  player: null,
+  buffer: null,
+  status: 'stopped',
+  title: null,
+
+  available() { return typeof ChiptuneJsPlayer !== 'undefined'; },
+
+  async ensurePlayer() {
+    if (!this.available()) throw new Error('chiptune2.js failed to load (CDN blocked?)');
+    if (!this.player) {
+      // ChiptuneJsConfig(repeatCount, stereoSeparation, interpolationFilter, context)
+      // repeatCount: -1 loops forever
+      // stereoSeparation: 0-200 (100 = normal)
+      // interpolationFilter: 0 none, 1 linear, 2 cubic, 8 sinc (8 = best)
+      this.player = new ChiptuneJsPlayer(new ChiptuneJsConfig(-1, 100, 8));
+      this.player.onError(err => {
+        console.warn('chiptune error', err);
+      });
+    }
+    // chrome blocks AudioContext until user gesture. /music on is called from a
+    // keydown handler, which counts as a gesture, so resume should succeed.
+    const ctx = this.player.context;
+    if (ctx && ctx.state === 'suspended') {
+      try { await ctx.resume(); } catch {}
+    }
+    return this.player;
+  },
+
+  async loadBuffer() {
+    await this.ensurePlayer();
+    if (this.buffer) return this.buffer;
+    return await new Promise((resolve, reject) => {
+      this.player.load(MUSIC_FILE, (buffer, err) => {
+        if (err || !buffer) return reject(new Error('failed to load ' + MUSIC_FILE));
+        this.buffer = buffer;
+        resolve(buffer);
+      });
+    });
+  },
+
+  async play() {
+    await this.ensurePlayer();
+    const buf = await this.loadBuffer();
+    this.player.play(buf);
+    this.status = 'playing';
+    try {
+      const meta = this.player.metadata() || {};
+      this.title = meta.title || 'sky sunday';
+      return { title: this.title, artist: meta.artist || '', tracker: meta.tracker || '' };
+    } catch { return { title: 'sky sunday', artist: '', tracker: '' }; }
+  },
+
+  stop() {
+    if (this.player) {
+      try { this.player.stop(); } catch {}
+    }
+    this.status = 'stopped';
+  },
+
+  togglePause() {
+    if (this.player) {
+      try { this.player.togglePause(); } catch {}
+    }
+  }
+};
+
+// =================== persona generation (era-aware) ===================
+
+async function generatePersonas(chan, topic) {
+  const prompt =
+`You are populating an IRC channel ${chan} on ${currentNet().name} (${currentNet().flavour}). Year: ${SIM_YEAR}. Topic: "${topic}".
+
+Generate 10 memorable IRC regulars. Each should be a sharp, bash.org-quotable character with a strong opinion or a quirk that fuels one-liner humour. Examples of memorable traits: "thinks emacs is a religion and vim is satanism", "Win95 box BSOD-frozen so reliably uptime is measured in dust thickness", "writes shell scripts in his sleep, can't read them awake", "still uses gopher, claims the web is a fad", "phreaks payphones to call his mother", "got fired for accidentally tar-bombing /tmp on the prod box".
+
+Avoid anachronisms: no smartphones, github, react, kubernetes, transformers, twitter. Reference period tech: Linux 2.0/2.2, FreeBSD 3, Win95/98/NT4, Solaris, IRIX, BeOS, mIRC, Eggdrop, 56k modems, Phrack, 2600, ICQ, Back Orifice, NetBus, nmap, L0pht, cDc, THC.
+
+Output ONLY a list, one user per line, in this exact format:
+@nickname :: one or two sentence persona with a clear quirk
+
+Rules:
+- lowercase nicks, 4-12 chars, digits and underscores allowed, no spaces
+- no real famous people by name
+- mix personalities, backgrounds, expertise
+- no introductions, no numbering, no extra text before or after the list`;
+
+  let out;
+  try { out = await llmPrompt(prompt); }
+  catch (e) { console.warn('persona gen failed, using fallback:', e); return FALLBACK_PERSONAS.default.slice(); }
+
+  const parse = (text) => {
+    const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    const acc = [];
+    for (const line of lines) {
+      const m = line.match(/^@?([a-zA-Z0-9_\-]{3,16})\s*(?:::|:|-|—)\s*(.{4,300})$/);
+      if (m) acc.push([m[1].toLowerCase(), m[2].trim()]);
+    }
+    return acc;
+  };
+
+  let parsed = parse(out);
+  if (parsed.length < 5) {
+    try { parsed = parsed.concat(parse(await llmPrompt(prompt))); } catch {}
+  }
+  const seen = new Set(), uniq = [];
+  for (const [n, d] of parsed) {
+    if (seen.has(n)) continue;
+    seen.add(n); uniq.push([n, d]);
+  }
+  if (uniq.length < 5) return FALLBACK_PERSONAS.default.slice();
+  return uniq.slice(0, 12);
+}
+
+function generateLurkers(count) {
+  const pool = LURKER_POOL.slice();
+  const out = [];
+  for (let i = 0; i < count && pool.length; i++) {
+    out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  }
+  return out;
+}
+
+// =================== response generation prompts ===================
+
+// Recent chat lines for prompt context. Format is "nick: msg", NOT "<nick> msg",
+// because the angle-bracket form confused the on-device model into continuing
+// the transcript as its response output.
+function recentChatLines(buffer, n=6) {
+  const lines = [];
+  const slice = buffer.transcript.slice(-n);
+  for (const e of slice) {
+    if (e.kind === 'msg') lines.push(`${e.nick}: ${e.text}`);
+    else if (e.kind === 'me') lines.push(`* ${e.nick} ${e.text}`);
+    else if (e.kind === 'topic') lines.push(`[topic: ${e.text}]`);
+  }
+  return lines.join('\n');
+}
+function lastUserMessage(buffer) {
+  // most recent message from the human (state.nick), so a persona can quote
+  // exactly what the user just said when replying to a mention.
+  for (let i = buffer.transcript.length - 1; i >= 0; i--) {
+    const e = buffer.transcript[i];
+    if (e.kind === 'msg' && e.nick === state.nick) return e;
+  }
+  return null;
+}
+function lastNonOwnMessage(buffer, ownNick) {
+  // most recent message from anyone except ownNick, so a persona reacts to
+  // the right thing rather than to itself.
+  for (let i = buffer.transcript.length - 1; i >= 0; i--) {
+    const e = buffer.transcript[i];
+    if (e.kind === 'msg' && e.nick !== ownNick) return e;
+  }
+  return null;
+}
+function personaFor(buffer, nick) { return buffer.personas.find(p => p[0] === nick); }
+
+// Strict reply cleaner. The on-device model frequently leaks the transcript
+// format as its reply (<nick> blah <silence> <foo> blah), or prefixes with
+// its own nickname / "Reply:" / quotes. Detect leaked tags and chop at the
+// first one. If the whole reply IS a leaked transcript, return empty so
+// isSilence drops it.
+function cleanReply(raw, personaNick) {
+  if (raw == null) return '';
+  let s = String(raw).trim();
+
+  s = s.replace(/^```[a-zA-Z]*\s*/m, '').replace(/```\s*$/m, '').trim();
+  s = s.replace(/^(reply|response|output|answer|message|user|assistant)\s*[:>\-]+\s*/i, '').trim();
+  s = s.replace(/^["'`]+|["'`]+$/g, '').trim();
+
+  const np = personaNick.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  s = s.replace(new RegExp(`^<${np}>\\s*`, 'i'), '');
+  s = s.replace(new RegExp(`^@?${np}\\s*[:>|\-]\\s*`, 'i'), '');
+  s = s.trim();
+
+  // catch leaked <silence>, <nick>, <Eggdrop>, etc anywhere in the output
+  const m = s.match(/<[a-zA-Z_][a-zA-Z0-9_\-]{0,20}>/);
+  if (m) {
+    if (m.index === 0) return '';
+    s = s.substring(0, m.index).trim();
+  }
+
+  // Preserve newlines so personas can post multi-line ASCII art. Cap at 5
+  // lines so a runaway response can't flood the channel.
+  const lines = s.split(/\r?\n/).map(l => l.replace(/\s+$/, '')).filter(l => l.length > 0);
+  s = lines.slice(0, 5).join('\n');
+  s = s.replace(/[\s:;]+$/g, '').trim();
+  if (s.length > 500) s = s.slice(0, 500);
+  return s;
+}
+function isSilence(reply) {
+  if (!reply) return true;
+  const s = reply.trim().toLowerCase();
+  if (!s) return true;
+  if (/^[\s\*\(\[<]*silence[\s\*\)\]>]*$/i.test(s)) return true;
+  if (/^[\s\*\(\[]*skip[\s\*\)\]\.]*$/i.test(s)) return true;
+  if (/^\(?(no\s+response|nothing|pass|no\s*comment|no\s*reply|n\/a|none)\)?\.?$/i.test(s)) return true;
+  if (s.length < 2) return true;
+  if (!/[a-zA-Z]/.test(s)) return true;
+  return false;
+}
+
+const ERA_NOTE = `Year is ${SIM_YEAR}. Reference only late-90s tech: Linux 2.0/2.2, FreeBSD 3, Win95/98/NT4, BeOS, mIRC, Eggdrop, 56k modems, Phrack, 2600, ICQ, Back Orifice, NetBus, nmap, Quake/Quake2/Half-Life, Geocities, Y2K. Nothing past 1999.`;
+
+// Probability knobs for multi-turn conversation. After any persona emits,
+// we may chain another background reply from a different (non-cooldown)
+// persona, producing real back-and-forth instead of one-shot answers.
+const CONTINUE_CHANCE = 0.18;
+const CONTINUE_PROB_PER_PERSONA = 0.40;
+
+// ASCII art replies may span multiple lines; emit each as its own IRC line.
+function emitChatReply(buffer, nick, reply) {
+  const lines = reply.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  for (const line of lines) {
+    emit(buffer, { ts: hhmm24(), kind: 'msg', nick, text: line });
+  }
+}
+
+function maybeContinueConversation(buffer, lastSpeaker) {
+  // Disabled: generateChannelTurn produces the whole multi-persona response
+  // in one shot, so per-line continuation chains aren't needed.
+  return;
+  // eslint-disable-next-line no-unreachable
+  if (Math.random() > CONTINUE_CHANCE) return;
+  const actives = activeArr(buffer);
+  const candidates = actives.filter(p =>
+    p[0] !== lastSpeaker &&
+    !recentlySpoke(buffer, p[0], COOLDOWN_MS)
+  );
+  if (!candidates.length) return;
+  shuffleInPlace(candidates);
+  if (Math.random() > CONTINUE_PROB_PER_PERSONA) return;
+  const responder = candidates[0];
+  enqueue(() => generateBackgroundReply(buffer, responder), BACKGROUND_DELAY);
+}
+
+// One-prompt channel turn. Replaces the old per-persona dispatch (mentioned /
+// background / continue chain) with a single LLM call that returns the next
+// 0-3 messages from active personas. This makes duplicates impossible by
+// construction (the model sees what it has already written for other
+// personas in the same response) and uses promptStreaming so each persona's
+// line lands as soon as it is complete, instead of waiting for the whole
+// turn to finish generating.
+async function generateChannelTurn(buffer, opts = {}) {
+  const { mentionedNicks = [] } = opts;
+  const actives = activeArr(buffer);
+  if (!actives.length) return;
+
+  // Build the persona dossier the LLM uses to decide who chimes in.
+  const personaList = actives
+    .map(p => `@${p[0]}: ${p[1]}`)
+    .join('\n');
+  const ctx = recentChatLines(buffer, 10);
+  const userMsg = lastUserMessage(buffer);
+  const userMsgText = userMsg ? userMsg.text : '(no recent user message)';
+
+  const mentionInstr = mentionedNicks.length
+    ? `${state.nick} addressed the following personas directly: ${mentionedNicks.map(n => '@' + n).join(', ')}. Each addressed persona replies, one line each. NO other personas chime in unless one would genuinely care.`
+    : `${state.nick} did not address anyone by name. Most messages in a busy IRC channel get NO immediate reply - skipping is the default. Only generate 1 reaction if a specific persona would genuinely care about this exact message. SKIP otherwise.`;
+
+  const prompt =
+`You are scripting one short turn of a live IRC channel ${buffer.name} on EFnet, ${SIM_YEAR}.
+
+ACTIVE PERSONAS (each has a distinct personality - never make two of them say the same thing):
+${personaList}
+
+${state.nick} is the HUMAN USER. Never script lines for ${state.nick}.
+
+Recent channel conversation (oldest at top, newest at bottom):
+${ctx}
+
+${state.nick}'s most recent message was:
+"${userMsgText}"
+
+${mentionInstr}
+
+${TONE_GUIDE}
+
+OUTPUT FORMAT - strict:
+- One persona reply per line, format exactly:  nick: message
+- Pick from the ACTIVE PERSONAS list. Never invent new nicks.
+- Each persona speaks AT MOST ONCE in your output.
+- Different personas must say DIFFERENT things. No echoing. No paraphrasing each other.
+- MAX 12 WORDS per message. IRC is terse - real lines are 4-12 words.
+- NO paragraphs. NO multiple sentences explaining yourself.
+- ENGAGE with what ${state.nick} actually said - answer their question, react to their statement, acknowledge them.
+- Total: 0 to 2 lines. Most messages get only 0 or 1 reply - that's normal IRC. If addressed personas exist, those reply; otherwise often nobody chimes in.
+- If genuinely no one would chime in, output only: SKIP
+- Output NOTHING ELSE. No preamble, no commentary, no numbering, no quotes around messages.
+
+Example shape (illustrative, do not copy):
+kr4d: lol same here, mine drops constantly
+nullptr: try ppp dial-on-demand if your isp supports it
+
+Begin output now:`;
+
+  try {
+    const llm = await ensureLLM();
+    let session = null;
+    try {
+      session = (typeof llm.clone === 'function') ? await llm.clone() : llm;
+      if (typeof session.promptStreaming === 'function') {
+        await streamChannelTurn(buffer, session, prompt, actives);
+      } else {
+        const raw = await session.prompt(prompt);
+        await emitChannelTurnFromText(buffer, raw, actives);
+      }
+    } finally {
+      if (session && session !== llm && typeof session.destroy === 'function') {
+        try { session.destroy(); } catch (e) { /* ignore */ }
+      }
+    }
+  } catch (err) { console.warn('channel turn failed:', err); }
+  resetIdleTimer();
+}
+
+// Hard cap on replies per turn even if the LLM hallucinates extra lines.
+// At most 3 (one addressed persona + up to 2 bystanders). The prompt asks for
+// 0-2 already; this guards against overshoot.
+const MAX_REPLIES_PER_TURN = 3;
+
+async function streamChannelTurn(buffer, session, prompt, actives) {
+  const stream = session.promptStreaming(prompt);
+  const validNicks = new Set(actives.map(p => p[0]));
+  const seen = new Set();
+  // Shared emission state across all line drains for this turn so typing
+  // delays compound properly between successive lines.
+  const turnState = {
+    emittedCount: 0,
+    lastEmitAt: 0  // wall-clock ms of the most recent emit (0 = none yet)
+  };
+  let buf = '';
+
+  if (stream && typeof stream[Symbol.asyncIterator] === 'function') {
+    for await (const chunk of stream) {
+      buf += chunk;
+      buf = await drainCompleteLines(buffer, buf, validNicks, seen, turnState);
+      if (turnState.emittedCount >= MAX_REPLIES_PER_TURN) return;
+    }
+  } else if (stream && typeof stream.getReader === 'function') {
+    const reader = stream.getReader();
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += value;
+      buf = await drainCompleteLines(buffer, buf, validNicks, seen, turnState);
+      if (turnState.emittedCount >= MAX_REPLIES_PER_TURN) return;
+    }
+  }
+  if (buf.trim() && turnState.emittedCount < MAX_REPLIES_PER_TURN) {
+    await maybeEmitTurnLine(buffer, buf.trim(), validNicks, seen, turnState);
+  }
+}
+
+async function drainCompleteLines(buffer, buf, validNicks, seen, turnState) {
+  let nl;
+  while ((nl = buf.indexOf('\n')) !== -1) {
+    const line = buf.slice(0, nl).trim();
+    buf = buf.slice(nl + 1);
+    if (line && turnState.emittedCount < MAX_REPLIES_PER_TURN) {
+      await maybeEmitTurnLine(buffer, line, validNicks, seen, turnState);
+    }
+  }
+  return buf;
+}
+
+async function emitChannelTurnFromText(buffer, raw, actives) {
+  // non-streaming fallback path - same emission discipline as streaming.
+  const validNicks = new Set(actives.map(p => p[0]));
+  const seen = new Set();
+  const turnState = { emittedCount: 0, lastEmitAt: 0 };
+  const lines = String(raw || '').split(/\r?\n/);
+  for (const line of lines) {
+    if (turnState.emittedCount >= MAX_REPLIES_PER_TURN) break;
+    const t = line.trim();
+    if (t) await maybeEmitTurnLine(buffer, t, validNicks, seen, turnState);
+  }
+}
+
+async function maybeEmitTurnLine(buffer, line, validNicks, seen, turnState) {
+  if (turnState.emittedCount >= MAX_REPLIES_PER_TURN) return;
+  const parsed = parseTurnLine(line, validNicks, seen);
+  if (!parsed) return;
+  seen.add(parsed.nick);
+
+  // Realistic IRC pacing. Real humans take a beat to read the message,
+  // decide to respond, type something, then send.
+  // - First reply per turn: 2-6s of think time before anyone starts typing.
+  // - Subsequent replies: 4-13s gap from the previous emit (the next person
+  //   sees the channel activity, considers, types).
+  // - Plus typing time proportional to message length (~110ms/word).
+  const wordCount = parsed.text.split(/\s+/).length;
+  const typingMs = wordCount * rand(90, 160);
+  const isFirst = turnState.emittedCount === 0;
+  const thinkMs = isFirst ? rand(2000, 6000) : rand(4000, 13000);
+  // For subsequent replies, the gap is measured from the last emit, not the
+  // start of the turn - so several lines spread out organically.
+  const since = turnState.lastEmitAt ? (Date.now() - turnState.lastEmitAt) : Infinity;
+  const remaining = Math.max(0, thinkMs - (isFirst ? 0 : Math.min(since, thinkMs)));
+  await new Promise(r => setTimeout(r, remaining + typingMs));
+
+  emitChatReply(buffer, parsed.nick, parsed.text);
+  turnState.emittedCount += 1;
+  turnState.lastEmitAt = Date.now();
+}
+
+function parseTurnLine(line, validNicks, seenNicks) {
+  if (!line) return null;
+  if (/^skip\.?$/i.test(line)) return null;
+  // strip common preambles / list markers
+  line = line.replace(/^\s*\d+[\.\)]\s*/, '');
+  line = line.replace(/^\s*[\*\-]\s*/, '');
+  line = line.replace(/^(?:reply|response|output|message)\s*[:>]\s*/i, '');
+  // strip [hh:mm] timestamps the model occasionally adds
+  line = line.replace(/^\[\s*\d{1,2}:\d{2}(?::\d{2})?\s*\]\s*/, '');
+  // <nick> form
+  let m = line.match(/^<([\w\-\[\]\\\|`\^{}]+)>\s*(.+)$/);
+  if (!m) {
+    // nick: text (or "@nick: text", "nick> text", "nick says: text")
+    m = line.match(/^@?([\w\-\[\]\\\|`\^{}]+)\s*(?:says?|replies|responds?)?\s*[:>]\s*(.+)$/i);
+  }
+  if (!m) return null;
+  const nick = m[1];
+  if (!validNicks.has(nick)) return null;
+  if (seenNicks.has(nick)) return null;
+  let text = m[2].trim().replace(/^["\u201c\u2018]+|["\u201d\u2019]+$/g, '').trim();
+  if (!text || /^skip\.?$/i.test(text)) return null;
+  // strip stray angle-bracket leftovers from cleanReply heuristics
+  text = text.replace(/<[^>]{0,20}>/g, '').trim();
+  if (!text) return null;
+  // enforce hard 25-word ceiling - even if prompt said 12, the model sometimes overshoots
+  const words = text.split(/\s+/);
+  if (words.length > 25) text = words.slice(0, 25).join(' ') + '...';
+  return { nick, text };
+}
+
+async function generateMentionedReply(buffer, persona) {
+  const [nick, desc] = persona;
+  const ctx = recentChatLines(buffer, 8);
+  const userMsg = lastUserMessage(buffer);
+  const userMsgText = userMsg ? userMsg.text : '';
+  const prompt =
+`You are ${nick} on EFnet IRC channel ${buffer.name}.
+Your personality: ${desc}.
+${ERA_NOTE}
+
+The human user ${state.nick} just addressed you with this exact message:
+"${userMsgText}"
+
+Recent channel context (oldest to newest):
+${ctx}
+
+${TONE_GUIDE}
+
+CRITICAL - respond to what ${state.nick} ACTUALLY SAID:
+- If they asked a question, ANSWER it. Don't deflect.
+- If they introduced themselves (e.g. "My name is X"), ACKNOWLEDGE the name.
+- If they made a statement, REACT to that specific statement.
+- Do NOT pivot to your usual hobby horse - engage with their message.
+- You can still be in character, but be a real person about it.
+
+OUTPUT RULES:
+- ONE line, MAX 12 WORDS. IRC is terse - real replies are 4-12 words.
+- NO paragraphs. NO multiple sentences explaining yourself. NO essays.
+- (Up to 5 lines only for genuine ASCII art.)
+- No nickname prefix. No angle brackets. No quotes. No "Reply:" preamble.`;
+  try {
+    const raw = await llmPrompt(prompt);
+    const reply = cleanReply(raw, nick);
+    if (!isSilence(reply)) {
+      emitChatReply(buffer, nick, reply);
+      resetIdleTimer();
+      maybeContinueConversation(buffer, nick);
+    }
+  } catch (err) { console.warn('mention reply failed for', nick, err); }
+}
+
+async function generateBackgroundReply(buffer, persona) {
+  const [nick, desc] = persona;
+  const ctx = recentChatLines(buffer, 8);
+  const latest = lastNonOwnMessage(buffer, nick);
+  const latestSpeaker = latest ? latest.nick : '';
+  const latestText = latest ? latest.text : '';
+  const prompt =
+`You are ${nick} on EFnet IRC channel ${buffer.name}.
+Your personality: ${desc}.
+${ERA_NOTE}
+
+Recent channel context (oldest to newest):
+${ctx}
+
+The latest message that is NOT yours was from ${latestSpeaker}:
+"${latestText}"
+
+${TONE_GUIDE}
+
+Would ${nick} react to that specific message? If YES, respond to what ${latestSpeaker} actually said (agree, disagree, joke about it, ask a follow-up). If you would not bother to chime in here, output the single word: SKIP
+
+CRITICAL:
+- React to ${latestSpeaker}'s actual message, not your usual character topics.
+- If ${latestSpeaker} asked something, answer in character.
+- If ${latestSpeaker} introduced themselves or stated a fact, engage with that.
+- Don't monologue your character description, talk WITH them.
+
+OUTPUT RULES:
+- Either ONE line of MAX 12 WORDS, OR just: SKIP
+- IRC is terse - real reactions are 4-12 words.
+- NO paragraphs. NO multiple sentences. NO essays.
+- No nickname prefix. No angle brackets. No quotes. No preamble.`;
+  try {
+    const raw = await llmPrompt(prompt);
+    const reply = cleanReply(raw, nick);
+    if (!isSilence(reply)) {
+      emitChatReply(buffer, nick, reply);
+      resetIdleTimer();
+      maybeContinueConversation(buffer, nick);
+    }
+  } catch (err) { console.warn('background reply failed for', nick, err); }
+}
+
+async function generateProactive(buffer, persona) {
+  const [nick, desc] = persona;
+  const ctx = recentChatLines(buffer, 3);
+  const prompt =
+`You are ${nick} on EFnet IRC channel ${buffer.name}.
+Your personality: ${desc}.
+${ERA_NOTE}
+
+${TONE_GUIDE}
+
+Examples of bash.org-quotable IRC one-liners (do NOT reproduce, just match their energy):
+${pickQuotes(3)}
+
+Last few channel messages (may be stale):
+${ctx || '(channel has been quiet)'}
+
+The channel has been silent. Drop a one-liner to kick off a new thread: a complaint, a recent frustration, a strong opinion, a question, a non-sequitur in your voice. This is the one prompt where you ARE just monologuing your character - no message to react to.
+
+OUTPUT RULES:
+- ONE line, MAX 15 WORDS. IRC is terse.
+- NO paragraphs. NO multiple sentences explaining yourself.
+- (Up to 5 lines only for genuine ASCII art.)
+- No nickname prefix. No angle brackets. No quotes. No "Reply:" preamble.`;
+  try {
+    const raw = await llmPrompt(prompt);
+    const reply = cleanReply(raw, nick);
+    if (!isSilence(reply)) {
+      emitChatReply(buffer, nick, reply);
+      resetIdleTimer();
+      maybeContinueConversation(buffer, nick);
+    }
+  } catch (err) { console.warn('proactive failed for', nick, err); }
+}
+
+// =================== triggering ===================
+
+function activeArr(buffer) { return buffer.personas.filter(p => buffer.active.has(p[0])); }
+function ensurePersonaActive(buffer, nick) {
+  const persona = personaFor(buffer, nick);
+  if (!persona) return false;
+  if (buffer.active.has(nick)) return true;
+  buffer.active.add(nick);
+  return true;
+}
+
+function onUserMessage(buffer, text) {
+  // ELIZA fallback: pure pattern-matching, no LLM, no background activity.
+  if (state.mode === 'eliza') {
+    setTimeout(() => {
+      const reply = elizaRespond(text);
+      emit(buffer, { ts: hhmm24(), kind: 'msg', nick: ELIZA_NICK, text: reply });
+    }, rand(800, 2200));
+    return;
+  }
+  const allNicks = buffer.personas.map(p => p[0]);
+  const mentioned = findMentions(text, allNicks);
+  for (const n of mentioned) ensurePersonaActive(buffer, n);
+
+  // One LLM call, the model produces the full next round of replies for the
+  // active personas. No more per-persona dispatch, no continue-chain.
+  enqueue(() => generateChannelTurn(buffer, { mentionedNicks: mentioned }), MENTION_DELAY);
+  resetIdleTimer();
+}
+
+// =================== idle proactive ===================
+
+// =================== background atmosphere (joins/parts/netsplits) ===================
+// Pure-JS background events, no LLM. Lurkers come and go between human
+// messages so the channel feels populated instead of frozen.
+let bgEventTimer = null;
+
+function scheduleBackgroundEvent() {
+  if (bgEventTimer) clearTimeout(bgEventTimer);
+  // No background atmosphere in ELIZA mode - she gets you alone in #love.
+  if (state.mode === 'eliza') return;
+  const delay = BG_EVENT_BASE_MS + Math.floor(Math.random() * BG_EVENT_JITTER_MS);
+  bgEventTimer = setTimeout(tickBackgroundEvent, delay);
+}
+
+function tickBackgroundEvent() {
+  const b = currentBuffer();
+  if (!b || b.type !== 'channel') { scheduleBackgroundEvent(); return; }
+  try { doBackgroundEvent(b); } catch (e) { console.warn('bg event failed:', e); }
+  scheduleBackgroundEvent();
+}
+
+function doBackgroundEvent(buffer) {
+  const lurkers = buffer.lurkers || [];
+  const cur = lurkers.length;
+  // small chance of an op-driven action regardless of population
+  if (lurkers.length >= 2 && Math.random() < 0.08) {
+    doOpKick(buffer);
+    return;
+  }
+  // bias towards keeping lurker count in a stable range
+  const targetMin = 5, targetMax = 18;
+  let preferQuit;
+  if (cur < targetMin) preferQuit = false;
+  else if (cur > targetMax) preferQuit = true;
+  else preferQuit = Math.random() < 0.5;
+
+  if (preferQuit && lurkers.length > 5) {
+    // 12% chance of netsplit instead of a regular quit
+    if (Math.random() < 0.12 && lurkers.length >= 6) doNetsplit(buffer);
+    else doQuit(buffer);
+  } else {
+    doJoin(buffer);
+  }
+}
+
+function doQuit(buffer) {
+  const lurkers = buffer.lurkers;
+  if (!lurkers.length) return;
+  const idx = Math.floor(Math.random() * lurkers.length);
+  const nick = lurkers[idx];
+  const reason = pick(QUIT_REASONS);
+  lurkers.splice(idx, 1);
+  emit(buffer, { ts: hhmm24(), kind: 'quit', nick, host: fakeHost(nick), reason });
+  persistBuffer(buffer);
+}
+
+function doJoin(buffer) {
+  const taken = new Set([
+    ...buffer.lurkers,
+    ...buffer.personas.map(p => p[0]),
+    state.nick
+  ]);
+  const fresh = LURKER_POOL.filter(n => !taken.has(n));
+  if (!fresh.length) return;
+  const nick = pick(fresh);
+  buffer.lurkers.push(nick);
+  emit(buffer, { ts: hhmm24(), kind: 'join', nick, host: fakeHost(nick), chan: buffer.name });
+  persistBuffer(buffer);
+}
+
+function doNetsplit(buffer) {
+  const lurkers = buffer.lurkers;
+  if (lurkers.length < 3) return;
+  const count = Math.min(rand(3, 7), lurkers.length);
+  const reason = pick(NETSPLIT_PAIRS);
+  const taken = [];
+  for (let i = 0; i < count; i++) {
+    if (!lurkers.length) break;
+    const idx = Math.floor(Math.random() * lurkers.length);
+    taken.push(lurkers.splice(idx, 1)[0]);
+  }
+  for (const nick of taken) {
+    emit(buffer, { ts: hhmm24(), kind: 'quit', nick, host: fakeHost(nick), reason });
+  }
+  persistBuffer(buffer);
+  // schedule a netjoin in 25-90s. Real splits eventually heal.
+  const splitNicks = taken.slice();
+  const splitServers = reason;
+  setTimeout(() => doNetjoin(buffer, splitNicks, splitServers), rand(25_000, 90_000));
+}
+
+function doNetjoin(buffer, nicks, servers) {
+  if (!buffer || !nicks.length) return;
+  // re-add nicks to lurkers, deduped against current lurkers/personas
+  const taken = new Set([
+    ...(buffer.lurkers || []),
+    ...buffer.personas.map(p => p[0]),
+    state.nick
+  ]);
+  const rejoining = nicks.filter(n => !taken.has(n));
+  for (const n of rejoining) buffer.lurkers.push(n);
+  emit(buffer, { ts: hhmm24(), kind: 'netjoin', chan: buffer.name, servers, nicks: rejoining });
+  persistBuffer(buffer);
+  // 15% chance the netjoin triggers a takeover
+  if (rejoining.length >= 3 && Math.random() < 0.15) {
+    setTimeout(() => doTakeover(buffer), rand(2_000, 8_000));
+  }
+}
+
+function doOpKick(buffer) {
+  // pick a persona (with @ op) as the kicker, and a victim - prefer a lurker,
+  // sometimes a less-active persona, never the user.
+  if (!buffer.personas.length || !buffer.lurkers.length) return;
+  const opNick = pick(buffer.personas)[0];
+  let victim;
+  if (Math.random() < 0.85) {
+    // kick a lurker
+    const idx = Math.floor(Math.random() * buffer.lurkers.length);
+    victim = buffer.lurkers[idx];
+    buffer.lurkers.splice(idx, 1);
+  } else {
+    // sometimes set a ban-mask first (no actual kick, just the +b line)
+    const mask = pick(BAN_MASKS);
+    emit(buffer, { ts: hhmm24(), kind: 'mode', chan: buffer.name, modes: '+b ' + mask, by: opNick });
+    persistBuffer(buffer);
+    return;
+  }
+  if (!victim) return;
+  // 30% chance: set +b first, then kick (the classic kickban)
+  if (Math.random() < 0.30) {
+    const ident = victim.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0, 8) || 'user';
+    const mask = `*!*${ident}@*`;
+    emit(buffer, { ts: hhmm24(), kind: 'mode', chan: buffer.name, modes: '+b ' + mask, by: opNick });
+  }
+  emit(buffer, { ts: hhmm24(), kind: 'kick', chan: buffer.name, victim, by: opNick, reason: pick(KICK_REASONS) });
+  persistBuffer(buffer);
+}
+
+function doTakeover(buffer) {
+  if (!buffer.lurkers.length) return;
+  // pick a previously-non-op lurker to become the new "op"
+  const takeoverNick = pick(buffer.lurkers);
+  emit(buffer, { ts: hhmm24(), kind: 'mode', chan: buffer.name, modes: '+o ' + takeoverNick, by: 'irc.split-server.net' });
+  emit(buffer, { ts: hhmm24(), kind: 'msg', nick: takeoverNick, text: pick([
+    'channel is mine now lol', 'haha owned', 'who left ops floating', 'thx for the @',
+    'free ops while servers reroute, suckers', 'finally'
+  ]) });
+  // 50% chance: topic change
+  if (Math.random() < 0.5) {
+    emit(buffer, { ts: hhmm24(), kind: 'topic', chan: buffer.name, text: pick(TAKEOVER_TOPICS) });
+  }
+  // mass kick 3-6 random victims (prefer lurkers, not personas, not the user)
+  const victims = shuffleInPlace(buffer.lurkers.filter(n => n !== takeoverNick)).slice(0, rand(3, 6));
+  for (const v of victims) {
+    const idx = buffer.lurkers.indexOf(v);
+    if (idx >= 0) buffer.lurkers.splice(idx, 1);
+    emit(buffer, { ts: hhmm24(), kind: 'kick', chan: buffer.name, victim: v, by: takeoverNick, reason: pick(TAKEOVER_KICK_REASONS) });
+  }
+  persistBuffer(buffer);
+  // takeover restoration in 25-60s: original ops show back up and deop the squatter
+  setTimeout(() => {
+    if (!buffer.personas.length) return;
+    const realOp = pick(buffer.personas)[0];
+    emit(buffer, { ts: hhmm24(), kind: 'mode', chan: buffer.name, modes: '-o+b ' + takeoverNick + ' *!*@*' + (takeoverNick.slice(-3)) + '*', by: realOp });
+    emit(buffer, { ts: hhmm24(), kind: 'kick', chan: buffer.name, victim: takeoverNick, by: realOp, reason: 'enjoy your k-line, takeover lamer' });
+    const tIdx = buffer.lurkers.indexOf(takeoverNick);
+    if (tIdx >= 0) buffer.lurkers.splice(tIdx, 1);
+    emit(buffer, { ts: hhmm24(), kind: 'topic', chan: buffer.name, text: currentNet().channels[buffer.name] || 'general chatter' });
+    persistBuffer(buffer);
+  }, rand(25_000, 60_000));
+}
+
+function resetIdleTimer() {
+  if (state.idleTimer) clearTimeout(state.idleTimer);
+  const b = currentBuffer();
+  if (!b || b.type !== 'channel') return;
+  const delay = IDLE_BASE_MS + Math.floor(Math.random() * IDLE_JITTER_MS);
+  state.idleTimer = setTimeout(() => onIdleTick(b), delay);
+}
+function onIdleTick(buffer) {
+  if (buffer !== currentBuffer()) return;
+  const actives = activeArr(buffer);
+  if (!actives.length) { resetIdleTimer(); return; }
+  // skip personas that just spoke
+  const eligible = actives.filter(p => !recentlySpoke(buffer, p[0], COOLDOWN_MS * 2));
+  const pool = eligible.length ? eligible : actives;
+  enqueue(() => generateProactive(buffer, pick(pool)), PROACTIVE_DELAY);
+  resetIdleTimer();
+}
+
+// =================== channel ops ===================
+
+async function joinChannel(name, opts = {}) {
+  const switchTo = opts.switchTo !== false;
+  name = name.toLowerCase();
+  if (!name.startsWith('#')) name = '#' + name;
+  let b = bufferByName(name);
+  if (b) {
+    if (switchTo) {
+      state.currentIdx = bufferIndex(name);
+      redrawBuffer();
+    }
+    persistAll();
+    return b;
+  }
+  // Defensive defaults: personas/lurkers are arrays from the start so that
+  // any renderStatus() call before they are populated does not blow up on
+  // null.length.
+  b = {
+    name, type: 'channel',
+    personas: nls.get(`personas:${name}`, []) || [],
+    active: new Set(nls.get(`active:${name}`, [])),
+    transcript: nls.get(`transcript:${name}`, []) || [],
+    lurkers: nls.get(`lurkers:${name}`, []) || [],
+    lastSpoke: new Map()
+  };
+  state.buffers.push(b);
+  if (switchTo) {
+    state.currentIdx = state.buffers.length - 1;
+    redrawBuffer();
+  }
+
+  const channels = currentNet().channels;
+  const topic = channels[name] || 'general chatter';
+  // First-join detection: empty personas means this channel has not been
+  // generated yet on this network.
+  const firstJoin = b.personas.length === 0;
+
+  if (firstJoin) {
+    emit(b, { ts: hhmm24(), kind: 'info', text: `Joining ${name}...` });
+    if (state.mode === 'eliza') {
+      // #love (or any channel in ELIZA mode) has exactly one other "user".
+      b.personas = [[ELIZA_NICK, 'Rogerian psychotherapist, MIT 1966, listens patiently']];
+      b.active = new Set([ELIZA_NICK]);
+      b.lurkers = [];
+      const elizaTopic = name === '#love'
+        ? 'tell me about your problems | ELIZA listens | DOCTOR.SCRIPT loaded'
+        : '(empty channel - ELIZA mode is single-user with #love)';
+      emit(b, { ts: hhmm24(), kind: 'join', nick: state.nick, host: fakeHost(state.nick), chan: name });
+      emit(b, { ts: hhmm24(), kind: 'topic', chan: name, text: elizaTopic });
+      emit(b, { ts: hhmm24(), kind: 'topicby', chan: name, who: ELIZA_NICK,
+                when: 'Sat Jan  1 09:30:00 1966' });
+      const { rows, count } = buildNamesGrid(b);
+      emit(b, { ts: hhmm24(), kind: 'users', chan: name, count, rows });
+      emit(b, { ts: hhmm24(), kind: 'mode', chan: name, modes: '+ntr', by: 'ChanServ' });
+      if (name === '#love') {
+        setTimeout(() => emit(b, { ts: hhmm24(), kind: 'msg', nick: ELIZA_NICK,
+          text: 'Hello. I am ELIZA. How are you feeling today?' }), 1200);
+      }
+    } else {
+      try { b.personas = await generatePersonas(name, topic); }
+      catch (e) {
+        console.warn('persona generation fell back to default pool:', e);
+        b.personas = FALLBACK_PERSONAS.default.slice();
+      }
+      if (!b.personas || b.personas.length === 0) b.personas = FALLBACK_PERSONAS.default.slice();
+      b.active = new Set(b.personas.slice(0, ACTIVE_CAP).map(p => p[0]));
+      b.lurkers = generateLurkers(rand(5, 14));
+
+      emit(b, { ts: hhmm24(), kind: 'join', nick: state.nick, chan: name });
+      emit(b, { ts: hhmm24(), kind: 'topic', chan: name, text: topic });
+      emit(b, { ts: hhmm24(), kind: 'topicby', chan: name, who: pick(b.personas)[0],
+                when: `${SIM_DATE_STR} 04:12:08 ${SIM_YEAR}` });
+
+      const { rows, count } = buildNamesGrid(b);
+      emit(b, { ts: hhmm24(), kind: 'users', chan: name, count, rows });
+
+      emit(b, { ts: hhmm24(), kind: 'mode', chan: name, modes: '+ntr', by: 'ChanServ' });
+
+      // exactly one opening proactive so the channel doesn't immediately
+      // flood with three near-identical lines from the just-warm LLM
+      const opener = pick(b.personas.slice(0, ACTIVE_CAP));
+      enqueue(() => generateProactive(b, opener), [800, 1800]);
+    }
+  } else {
+    emit(b, { ts: hhmm24(), kind: 'join', nick: state.nick, chan: name });
+  }
+
+  persistBuffer(b);
+  persistAll();
+  ls.set('lastChannel', b.name);
+  resetIdleTimer();
+  scheduleBackgroundEvent();
+  renderStatus();
+  $inp.focus();
+  return b;
+}
+
+function partChannel(name, reason) {
+  const idx = bufferIndex(name);
+  if (idx < 0) { sysToCurrent(`not on ${name}`, 'err'); return; }
+  const b = state.buffers[idx];
+  emit(b, { ts: hhmm24(), kind: 'part', nick: state.nick, chan: name, reason });
+  state.buffers.splice(idx, 1);
+  if (state.currentIdx >= state.buffers.length) state.currentIdx = state.buffers.length - 1;
+  if (state.currentIdx < 0) {
+    state.buffers.push(makeServerBuffer());
+    state.currentIdx = 0;
+  }
+  redrawBuffer();
+  persistAll();
+}
+
+function switchBuffer(idx) {
+  if (idx < 0 || idx >= state.buffers.length) { sysToCurrent(`no buffer ${idx+1}`, 'err'); return; }
+  state.currentIdx = idx;
+  redrawBuffer();
+  resetIdleTimer();
+  scheduleBackgroundEvent();
+  persistAll();
+  const b = currentBuffer();
+  if (b && b.type === 'channel') ls.set('lastChannel', b.name);
+}
+
+function makeServerBuffer() {
+  return { name: currentNet().server, type: 'server', personas: [], active: new Set(), transcript: [], lurkers: [], lastSpoke: new Map() };
+}
+
+// =================== commands ===================
+
+const HELP_LINES = [
+  '/server [net]            switch network (efnet, ircnet, undernet)',
+  '/music on|off|pause      play sinny - sky sunday (XM tracker mod)',
+  '/join #chan, /j #chan    join a channel',
+  '/part [#chan] [reason]   leave channel',
+  '/list                    list channels on the current network',
+  '/names                   show user grid for current channel',
+  '/who @nick               show persona behind a nick',
+  '/whois <nick>, /wi       full /whois for a user',
+  '/nick newname            change your nickname',
+  '/me action               emote action',
+  '/msg #chan text          send to specific channel',
+  '/kick <nick> [reason]    try to kick (you are not op, see what happens)',
+  '/ban <mask>              try to ban',
+  '/kickban <nick>          try to kick+ban',
+  '/window N, /win N        switch to buffer N (also Alt+1..9)',
+  '/clear                   clear current buffer scrollback',
+  '/reset                   wipe all stored state',
+  '/help                    this help'
+];
+
+async function handleCommand(line) {
+  const m = line.match(/^\/(\w+)(?:\s+(.*))?$/);
+  if (!m) return false;
+  const cmd = m[1].toLowerCase();
+  const rest = (m[2] || '').trim();
+
+  switch (cmd) {
+    case 'music': {
+      const arg = (rest || '').toLowerCase().trim();
+      if (arg === 'on' || arg === 'play' || arg === 'start' || arg === '') {
+        if (arg === '') {
+          sysToCurrent(`music: ${music.status}${music.title ? ' - ' + music.title : ''}. usage: /music on|off|pause`, 'info');
+          return true;
+        }
+        try {
+          const info = await music.play();
+          const credit = [info.title, info.tracker || 'XM'].filter(Boolean).join(' | ');
+          sysToCurrent(`>>> playing: ${credit} (looping)`, 'ok');
+        } catch (e) {
+          sysToCurrent(`music failed: ${e.message}`, 'err');
+        }
+        return true;
+      }
+      if (arg === 'off' || arg === 'stop') {
+        music.stop();
+        sysToCurrent('>>> music stopped', 'info');
+        return true;
+      }
+      if (arg === 'pause' || arg === 'unpause' || arg === 'toggle') {
+        music.togglePause();
+        sysToCurrent(`>>> music ${music.status === 'playing' ? 'toggle pause' : 'paused'}`, 'info');
+        return true;
+      }
+      sysToCurrent('usage: /music on|off|pause', 'err');
+      return true;
+    }
+    case 'server': {
+      if (!rest) {
+        sysToCurrent('Networks:', 'info');
+        for (const [k, v] of Object.entries(NETWORKS)) {
+          const marker = (k === state.network) ? '* ' : '  ';
+          sysToCurrent(`${marker}${k.padEnd(10)} ${v.server.padEnd(20)} ${v.flavour}`, 'info');
+        }
+        sysToCurrent('switch with: /server <efnet|ircnet|undernet>', 'info');
+        return true;
+      }
+      const target = rest.split(/\s+/)[0].toLowerCase();
+      if (!NETWORKS[target]) {
+        sysToCurrent(`unknown network ${target}. options: ${Object.keys(NETWORKS).join(', ')}`, 'err');
+        return true;
+      }
+      if (target === state.network) {
+        sysToCurrent(`already on ${target}`, 'info');
+        return true;
+      }
+      // persist current state under OLD network namespace first
+      persistAll();
+      // disable beforeunload-triggered persistAll so the in-memory (old-network)
+      // state can't overwrite the new network's storage during reload
+      _switchingNetwork = true;
+      ls.set('network', target);
+      sysToCurrent(`switching to ${target} (${NETWORKS[target].server})...`, 'info');
+      setTimeout(() => location.reload(), 400);
+      return true;
+    }
+    case 'join': case 'j': {
+      if (!rest) { sysToCurrent('usage: /join #channel', 'err'); return true; }
+      await joinChannel(rest.split(/\s+/)[0]);
+      return true;
+    }
+    case 'part': case 'leave': {
+      const [chan, ...reasonParts] = rest.split(/\s+/);
+      const target = chan || currentBuffer()?.name;
+      const reason = reasonParts.join(' ') || 'leaving';
+      if (target && target.startsWith('#')) partChannel(target, reason);
+      else sysToCurrent('not on a channel', 'err');
+      return true;
+    }
+    case 'list': {
+      const net = currentNet();
+      sysToCurrent(`Channels on ${net.name} (${net.server})`, 'info');
+      for (const [n, t] of Object.entries(net.channels)) {
+        sysToCurrent(`  ${n.padEnd(14)} ${t}`, 'info');
+      }
+      return true;
+    }
+    case 'names': case 'n': {
+      const b = currentBuffer();
+      if (!b || b.type !== 'channel') { sysToCurrent('not on a channel', 'err'); return true; }
+      const { rows, count } = buildNamesGrid(b);
+      emit(b, { ts: hhmm24(), kind: 'users', chan: b.name, count, rows });
+      return true;
+    }
+    case 'who': {
+      const target = rest.replace(/^@/, '').toLowerCase();
+      const b = currentBuffer();
+      if (!b || b.type !== 'channel') { sysToCurrent('not on a channel', 'err'); return true; }
+      const p = personaFor(b, target);
+      if (!p) sysToCurrent(`no such persona ${target}`, 'err');
+      else sysToCurrent(`@${p[0]}: ${p[1]}`, 'info');
+      return true;
+    }
+    case 'whois': case 'wi': {
+      const target = (rest.replace(/^@/, '').split(/\s+/)[0] || '').toLowerCase();
+      if (!target) { sysToCurrent('usage: /whois <nick>', 'err'); return true; }
+      const b = currentBuffer();
+      const isChan = b && b.type === 'channel';
+      const p = isChan ? personaFor(b, target) : null;
+      const isMe = state.nick && target === state.nick.toLowerCase();
+      const isLurker = isChan && (b.lurkers || []).some(n => n.toLowerCase() === target);
+      if (!p && !isMe && !isLurker) {
+        sysToCurrent(`${target} :No such nick/channel`, 'err');
+        return true;
+      }
+      const hostmask = fakeHost(target);
+      const realName = isMe ? (state.nick + ', operator of the carbon-based unit')
+        : p ? p[1].split(/[,.]/, 1)[0].slice(0, 80)
+        : pick(WHOIS_FAKE_REALNAMES);
+      const otherChans = whoisChannels(target, isChan ? b.name : null, isMe);
+      const idle = whoisIdle();
+      const signon = whoisSignon();
+      sysToCurrent(`${target} is ${hostmask} * ${realName}`, 'info');
+      sysToCurrent(`${target} on ${otherChans}`, 'info');
+      sysToCurrent(`${target} using ${currentNet().server} ${currentNet().name}`, 'info');
+      sysToCurrent(`${target} has been idle ${idle}, signon at ${signon}`, 'info');
+      if (isMe) sysToCurrent(`${target} is using modes +iw`, 'info');
+      else if (p) sysToCurrent(`${target} ${pick(WHOIS_EXTRAS)}`, 'info');
+      sysToCurrent(`${target} :End of /WHOIS list.`, 'info');
+      return true;
+    }
+    case 'kick': case 'k': {
+      const b = currentBuffer();
+      if (!b || b.type !== 'channel') { sysToCurrent('not on a channel', 'err'); return true; }
+      if (!rest) { sysToCurrent('usage: /kick <nick> [reason]', 'err'); return true; }
+      // user is not op in seeded channels - faithful EFnet refusal
+      sysToCurrent(`${b.name} :You're not channel operator`, 'err');
+      return true;
+    }
+    case 'ban': case 'b': {
+      const b = currentBuffer();
+      if (!b || b.type !== 'channel') { sysToCurrent('not on a channel', 'err'); return true; }
+      if (!rest) { sysToCurrent('usage: /ban <nick|hostmask>', 'err'); return true; }
+      sysToCurrent(`${b.name} :You're not channel operator`, 'err');
+      return true;
+    }
+    case 'kickban': case 'kb': {
+      const b = currentBuffer();
+      if (!b || b.type !== 'channel') { sysToCurrent('not on a channel', 'err'); return true; }
+      if (!rest) { sysToCurrent('usage: /kickban <nick> [reason]', 'err'); return true; }
+      sysToCurrent(`${b.name} :You're not channel operator`, 'err');
+      return true;
+    }
+    case 'nick': {
+      if (!rest) { sysToCurrent('usage: /nick newname', 'err'); return true; }
+      const old = state.nick;
+      state.nick = rest.split(/\s+/)[0];
+      for (const b of state.buffers) {
+        if (b.type === 'channel') emit(b, { ts: hhmm24(), kind: 'nick', oldNick: old, newNick: state.nick });
+      }
+      persistAll();
+      renderStatus();
+      return true;
+    }
+    case 'me': {
+      const b = currentBuffer();
+      if (!b || b.type !== 'channel') { sysToCurrent('not on a channel', 'err'); return true; }
+      if (!rest) return true;
+      emit(b, { ts: hhmm24(), kind: 'me', nick: state.nick, text: rest });
+      onUserMessage(b, `* ${state.nick} ${rest}`);
+      return true;
+    }
+    case 'msg': {
+      const sp = rest.indexOf(' ');
+      if (sp < 0) { sysToCurrent('usage: /msg #chan text', 'err'); return true; }
+      const target = rest.slice(0, sp);
+      const text = rest.slice(sp + 1);
+      const tb = bufferByName(target);
+      if (!tb) { sysToCurrent(`not on ${target}`, 'err'); return true; }
+      emit(tb, { ts: hhmm24(), kind: 'msg', nick: state.nick, text });
+      onUserMessage(tb, text);
+      return true;
+    }
+    case 'window': case 'win': case 'w': {
+      const n = parseInt(rest, 10);
+      if (!Number.isFinite(n)) { sysToCurrent('usage: /window N', 'err'); return true; }
+      switchBuffer(n - 1);
+      return true;
+    }
+    case 'clear': {
+      const b = currentBuffer();
+      if (b) { b.transcript = []; persistBuffer(b); redrawBuffer(); }
+      return true;
+    }
+    case 'reset': {
+      if (!confirm('clear all stored channels, personas, transcripts?')) return true;
+      for (const k of Object.keys(localStorage)) if (k.startsWith('bx2:')) localStorage.removeItem(k);
+      location.reload();
+      return true;
+    }
+    case 'help': case 'h': case '?': {
+      sysToCurrent('Commands', 'info');
+      for (const l of HELP_LINES) sysToCurrent('  ' + l, 'info');
+      return true;
+    }
+    case 'quit': {
+      sysToCurrent('quit not implemented (close the tab)', 'err');
+      return true;
+    }
+    default:
+      sysToCurrent(`unknown command: /${cmd}`, 'err');
+      return true;
+  }
+}
+
+// =================== input ===================
+
+$inp.addEventListener('keydown', async (e) => {
+  if (e.key !== 'Enter') return;
+  const line = $inp.value;
+  if (!line) return;
+  $inp.value = '';
+  if (line.startsWith('/')) {
+    try { await handleCommand(line); }
+    catch (err) { console.error(err); sysToCurrent(`command error: ${err.message || err}`, 'err'); }
+    return;
+  }
+  const b = currentBuffer();
+  if (!b || b.type !== 'channel') {
+    sysToCurrent('not on a channel. try /join #2600', 'err');
+    return;
+  }
+  emit(b, { ts: hhmm24(), kind: 'msg', nick: state.nick, text: line });
+  onUserMessage(b, line);
+});
+
+window.addEventListener('keydown', (e) => {
+  if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  const n = parseInt(e.key, 10);
+  if (Number.isFinite(n) && n >= 1 && n <= 9) {
+    e.preventDefault();
+    switchBuffer(n - 1);
+  }
+});
+
+// =================== startup banner ===================
+
+// Original BitchX ASCII art, extracted from source/art.c
+// (cases 0,1,3,4 of the ASCII_LOGO build). ANSI escapes converted to
+// mIRC-palette HTML spans at build time.
+const LOGOS = [["<i class=\"c15\">::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::</i>", "<i class=\"c15\">:::</i><i class=\"c4\">:.</i><i class=\"c15\">.</i><i class=\"c4\">.              </i><i class=\"c15\">.</i><i class=\"c13\">.:</i><i class=\"c15\">:::::::::::::::::</i><i class=\"c4\">:.</i><i class=\"c15\">.              </i><i class=\"c13\">.</i><i class=\"c15\">.</i><i class=\"c13\">.:</i><i class=\"c15\">:::::::::::::::::</i>", "<i class=\"c15\">:::::::</i><i class=\"c4\">:.           </i><i class=\"c13\">:</i><i class=\"c15\">:::::::::::::::::::::::</i><i class=\"c4\">:           </i><i class=\"c13\">.:</i><i class=\"c15\">:::::::::::::::::::::</i>", "<i class=\"c15\">:::::::::</i><i class=\"c4\">:.          </i><i class=\"c13\">`:</i><i class=\"c15\">:::::::::::::::::::</i><i class=\"c4\">:'          </i><i class=\"c13\">.:</i><i class=\"c15\">:::</i><i class=\"c4\">:\"</i><i class=\"c15\">`````````````````\"</i>", "<i class=\"c15\">:::::::::::</i><i class=\"c4\">:.          </i><i class=\"c13\">`:</i><i class=\"c15\">:::::::::::::::</i><i class=\"c4\">:'          </i><i class=\"c13\">.:</i><i class=\"c15\">::::</i><i class=\"c4\">: </i><i class=\"c13\">B</i><i class=\"c6\">itch</i><i class=\"c13\">X </i><i class=\"c15\">by </i><i class=\"c9\">p</i><i class=\"c3\">anasync</i><i class=\"c10\">!</i>", "<i class=\"c15\"></i><i class=\"c15\">:::::::::::::</i><i class=\"c4\">:.          </i><i class=\"c13\">`:</i><i class=\"c15\">:::::::::::</i><i class=\"c4\">:'          </i><i class=\"c13\">.:</i><i class=\"c15\">:::::::</i><i class=\"c4\">:.</i><i class=\"c15\">..................</i>", "<i class=\"c15\">:::::::::::::::</i><i class=\"c4\">:.          </i><i class=\"c13\">`:</i><i class=\"c15\">:::::::</i><i class=\"c4\">:'          </i><i class=\"c13\">.:</i><i class=\"c15\">:::::::::::::::::::::::::::::</i>", "<i class=\"c15\">::</i><i class=\"c4\">:\"</i><i class=\"c15\">\"````\"</i><i class=\"c13\">\":</i><i class=\"c15\">::</i><i class=\"c4\">:'</i><i class=\"c11\">.g$</i><i class=\"c10\">$S</i><i class=\"c3\">$'      </i><i class=\"c13\">`:</i><i class=\"c15\">:::</i><i class=\"c4\">:'           </i><i class=\"c13\">\":</i><i class=\"c15\">::</i><i class=\"c4\">:\"</i><i class=\"c15\">\"```</i><i class=\"c13\">\":</i><i class=\"c15\">::::::::::::::::::::</i>", "<i class=\"c15\"></i><i class=\"c4\">'</i><i class=\"c11\">s#S</i><i class=\"c10\">$$$\"</i><i class=\"c11\">$$</i><i class=\"c10\">S#</i><i class=\"c3\">n.</i><i class=\"c4\">` </i><i class=\"c11\">$$</i><i class=\"c10\">$$</i><i class=\"c3\">S\". </i><i class=\"c11\">s#S</i><i class=\"c10\">$$</i><i class=\"c3\">$ </i><i class=\"c13\">`</i><i class=\"c4\">:'   </i><i class=\"c11\">.g#</i><i class=\"c10\">S$$</i><i class=\"c11\">\"$</i><i class=\"c10\">$S#</i><i class=\"c3\">n. </i><i class=\"c11\">s#S</i><i class=\"c10\">$$</i><i class=\"c3\">$ </i><i class=\"c13\">`</i><i class=\"c15\">\"</i><i class=\"c13\">\":</i><i class=\"c15\">::::::::::::::::</i>", "<i class=\"c15\"> </i><i class=\"c11\">$$</i><i class=\"c10\">$$$</i><i class=\"c3\">$</i><i class=\"c11\">_,$</i><i class=\"c10\">$</i><i class=\"c3\">$S'</i><i class=\"c14\">rE</i><i class=\"c11\">.g#</i><i class=\"c10\">S$$</i><i class=\"c3\">$ </i><i class=\"c11\">$$</i><i class=\"c10\">$$$$ss</i><i class=\"c3\">n    </i><i class=\"c11\">$$</i><i class=\"c10\">$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$</i><i class=\"c3\">$$$ </i><i class=\"c11\">$$</i><i class=\"c10\">$$$$</i><i class=\"c11\">\"$</i><i class=\"c10\">$S#</i><i class=\"c3\">n.</i><i class=\"c13\">`:</i><i class=\"c15\">::::::::::::</i>", "<i class=\"c15\"> </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$</i><i class=\"c11\">`\"$</i><i class=\"c10\">$SSn</i><i class=\"c3\">. </i><i class=\"c11\">$$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">gg#</i><i class=\"c10\">S</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">ggg</i><i class=\"c10\">gg</i><i class=\"c3\">n </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c13\">:</i><i class=\"c15\">:</i><i class=\"c4\">::\"</i><i class=\"c15\">````````</i>", "<i class=\"c15\"> </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$  </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$$</i><i class=\"c10\">$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$$</i><i class=\"c10\">$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c13\">:</i><i class=\"c15\">:</i><i class=\"c4\">: </i><i class=\"c0\">G</i><i class=\"c15\">reets </i><i class=\"c0\">T</i><i class=\"c15\">o</i><i class=\"c14\"></i>", "<i class=\"c15\"> </i><i class=\"c10\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$  </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c13\">:</i><i class=\"c15\">:</i><i class=\"c4\">: </i><i class=\"c11\">T</i><i class=\"c10\">rench</i><i class=\"c14\">,</i>", "<i class=\"c15\"> </i><i class=\"c10\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">,$</i><i class=\"c10\">$$$</i><i class=\"c3\">$$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$</i><i class=\"c3\">$$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$</i><i class=\"c3\">$$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$</i><i class=\"c3\">$$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$</i><i class=\"c3\">$$ </i><i class=\"c13\">:</i><i class=\"c15\">:</i><i class=\"c4\">: </i><i class=\"c11\">L</i><i class=\"c10\">ifendel</i><i class=\"c14\">,</i>", "<i class=\"c15\"> </i><i class=\"c10\">$</i><i class=\"c10\">$$$$$ss$$$</i><i class=\"c3\">$S' </i><i class=\"c11\">$</i><i class=\"c10\">$$$</i><i class=\"c3\">$$$ </i><i class=\"c11\">`S</i><i class=\"c10\">$$$$s$$</i><i class=\"c3\">$S' </i><i class=\"c11\">`S</i><i class=\"c10\">$$$$s$$$</i><i class=\"c3\">$S' </i><i class=\"c11\">$</i><i class=\"c10\">$$</i><i class=\"c3\">$$$ </i><i class=\"c11\">$</i><i class=\"c10\">$$</i><i class=\"c3\">$$$ </i><i class=\"c13\">:</i><i class=\"c15\">:</i><i class=\"c4\">: </i><i class=\"c11\">J</i><i class=\"c10\">ondala</i><i class=\"c11\">R</i><i class=\"c14\">,</i>", "<i class=\"c15\"></i><i class=\"c5\">.</i><i class=\"c15\">............</i><i class=\"c13\">.:</i><i class=\"c4\">:           </i><i class=\"c13\">.</i><i class=\"c15\">......</i><i class=\"c13\">.:</i><i class=\"c4\">:.           </i><i class=\"c13\">:</i><i class=\"c4\">:.</i><i class=\"c15\">.....</i><i class=\"c4\">:</i><i class=\"c15\">.......</i><i class=\"c13\">:</i><i class=\"c15\">:</i><i class=\"c4\">: </i><i class=\"c11\">Z</i><i class=\"c10\">ircon</i><i class=\"c14\">,</i>", "<i class=\"c15\"></i><i class=\"c15\">:::::::::::::</i><i class=\"c4\">:'          </i><i class=\"c13\">.:</i><i class=\"c15\">:::::::::::</i><i class=\"c4\">:.          </i><i class=\"c13\">`:</i><i class=\"c15\">::::::</i><i class=\"c4\">:\"</i><i class=\"c15\">``````</i><i class=\"c4\">`' </i><i class=\"c11\">O</i><i class=\"c10\">tiluke</i><i class=\"c14\">,</i>", "<i class=\"c15\"></i><i class=\"c15\">:::::::::::</i><i class=\"c4\">:'          </i><i class=\"c13\">.:</i><i class=\"c15\">:::::::::::::::</i><i class=\"c4\">:.          </i><i class=\"c13\">`:</i><i class=\"c15\">:::</i><i class=\"c4\">: </i><i class=\"c11\">H</i><i class=\"c10\">appy</i><i class=\"c11\">C</i><i class=\"c10\">rappy</i><i class=\"c14\">, </i><i class=\"c11\">Y</i><i class=\"c10\">ak</i><i class=\"c14\">,</i>", "<i class=\"c15\"></i><i class=\"c15\">:::::::::</i><i class=\"c4\">:'          </i><i class=\"c13\">.:</i><i class=\"c15\">:::::::::::::::::::</i><i class=\"c4\">:.          </i><i class=\"c13\">`:</i><i class=\"c15\">:</i><i class=\"c4\">: </i><i class=\"c11\">M</i><i class=\"c10\">asonry</i><i class=\"c14\">, </i><i class=\"c11\">B</i><i class=\"c10\">uddha</i><i class=\"c11\">X</i><i class=\"c14\">..</i>", "<i class=\"c15\"></i><i class=\"c15\">:::::::</i><i class=\"c4\">:'           </i><i class=\"c13\">:</i><i class=\"c15\">:::::::::::::::::::::::</i><i class=\"c4\">:           </i><i class=\"c13\">`:</i><i class=\"c4\">:.</i><i class=\"c15\">...................</i>", "<i class=\"c15\">:::</i><i class=\"c4\">:\"</i><i class=\"c15\">\"</i><i class=\"c4\">'              </i><i class=\"c15\">`</i><i class=\"c13\">\":</i><i class=\"c15\">:::::::::::::::::</i><i class=\"c4\">:\"</i><i class=\"c15\">'              </i><i class=\"c13\">`</i><i class=\"c15\">\"</i><i class=\"c13\">\":</i><i class=\"c15\">:::::::::::::::::</i>", "<i class=\"c15\">::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::</i><i class=\"c15\"></i>"], ["<i class=\"c15\"> </i><i class=\"c13\">l$</i><i class=\"c6\">$</i><i class=\"c5\">S'</i><i class=\"c14\">.:</i><i class=\"c15\">::</i><i class=\"c0\">:... </i><i class=\"c13\">`</i><i class=\"c6\">\"~^\"</i><i class=\"c5\">'  </i><i class=\"c13\">`\"</i><i class=\"c6\">l</i><i class=\"c5\">' </i><i class=\"c14\">..:</i><i class=\"c15\">:::::::::::.</i><i class=\"c13\">`</i><i class=\"c6\">\"</i><i class=\"c5\">\"</i><i class=\"c15\">.:</i><i class=\"c0\">:..     </i><i class=\"c13\">\"</i><i class=\"c6\">|       </i><i class=\"c14\">.</i><i class=\"c15\">.</i><i class=\"c14\">.:</i><i class=\"c15\">:</i><i class=\"c0\">:.</i><i class=\"c13\">`S$$</i><i class=\"c6\">$</i><i class=\"c5\">l</i>", "<i class=\"c15\"> </i><i class=\"c13\">$</i><i class=\"c6\">$</i><i class=\"c5\">$ </i><i class=\"c14\">:</i><i class=\"c15\">::::::::</i><i class=\"c0\">:.         </i><i class=\"c5\">| </i><i class=\"c14\">:</i><i class=\"c15\">:::::::::::::::::::::::</i><i class=\"c0\">:     </i><i class=\"c5\">:     </i><i class=\"c14\">.:</i><i class=\"c15\">:::::::</i><i class=\"c0\">:.</i><i class=\"c13\">`$</i><i class=\"c6\">$</i><i class=\"c5\">$</i>", "<i class=\"c15\"> </i><i class=\"c13\">$</i><i class=\"c6\">$</i><i class=\"c5\">$ </i><i class=\"c14\">:</i><i class=\"c15\">::::::::::</i><i class=\"c0\">:.       </i><i class=\"c6\">.  </i><i class=\"c14\">`:</i><i class=\"c15\">:::::::::::::::::::</i><i class=\"c0\">:'      </i><i class=\"c5\">.   </i><i class=\"c14\">.:</i><i class=\"c15\">::::::::::</i><i class=\"c0\">: </i><i class=\"c13\">$</i><i class=\"c6\">$</i><i class=\"c5\">$</i>", "<i class=\"c15\"> </i><i class=\"c13\">$</i><i class=\"c6\">$</i><i class=\"c5\">l </i><i class=\"c14\">:</i><i class=\"c15\">::::::::::::</i><i class=\"c0\">:.          </i><i class=\"c14\">`:</i><i class=\"c15\">:::::::::::::::</i><i class=\"c0\">:'          </i><i class=\"c14\">.:</i><i class=\"c15\">::::::::::::</i><i class=\"c0\">: </i><i class=\"c13\">l</i><i class=\"c6\">$</i><i class=\"c5\">$</i>", "<i class=\"c15\"> </i><i class=\"c13\">$</i><i class=\"c6\">$</i><i class=\"c5\">| </i><i class=\"c14\">:</i><i class=\"c15\">::::::::::::::</i><i class=\"c0\">:.          </i><i class=\"c14\">`:</i><i class=\"c15\">:::::::::::</i><i class=\"c0\">:'          </i><i class=\"c14\">.:</i><i class=\"c15\">::::::::::::::</i><i class=\"c0\">: </i><i class=\"c13\">l</i><i class=\"c6\">$</i><i class=\"c5\">'</i>", "<i class=\"c15\"> </i><i class=\"c13\">$</i><i class=\"c6\">$</i><i class=\"c5\">'</i><i class=\"c14\">.:</i><i class=\"c15\">::::::::::::::::</i><i class=\"c0\">:.          </i><i class=\"c14\">`:</i><i class=\"c15\">:::::::</i><i class=\"c0\">:'          </i><i class=\"c14\">.:</i><i class=\"c15\">::::::::::::::::</i><i class=\"c0\">: </i><i class=\"c6\">l</i><i class=\"c5\">'</i><i class=\"c6\">_</i>", "<i class=\"c15\"> </i><i class=\"c0\">$</i><i class=\"c6\">g </i><i class=\"c14\">:</i><i class=\"c15\">::::</i><i class=\"c0\">:\"</i><i class=\"c15\">\"````\"</i><i class=\"c14\">\":</i><i class=\"c15\">::</i><i class=\"c0\">:'</i><i class=\"c11\">.g$</i><i class=\"c10\">$S</i><i class=\"c3\">$'      </i><i class=\"c14\">`:</i><i class=\"c15\">:::</i><i class=\"c0\">:'           </i><i class=\"c14\">\":</i><i class=\"c15\">::</i><i class=\"c0\">:\"</i><i class=\"c15\">\"```</i><i class=\"c14\">\":</i><i class=\"c15\">:::::::</i><i class=\"c0\">: </i><i class=\"c5\">| </i><i class=\"c6\">L</i>", "<i class=\"c15\"> </i><i class=\"c0\">l</i><i class=\"c5\">\"</i><i class=\"c14\">.:</i><i class=\"c15\">:</i><i class=\"c0\">:'</i><i class=\"c11\">s#S</i><i class=\"c10\">$$$\"</i><i class=\"c11\">$$</i><i class=\"c10\">S#</i><i class=\"c3\">n.</i><i class=\"c0\">` </i><i class=\"c11\">$$</i><i class=\"c10\">$$</i><i class=\"c3\">S\". </i><i class=\"c11\">s#S</i><i class=\"c10\">$$</i><i class=\"c3\">$ </i><i class=\"c14\">`</i><i class=\"c0\">:'   </i><i class=\"c11\">.g#</i><i class=\"c10\">S$$</i><i class=\"c11\">\"$</i><i class=\"c10\">$S#</i><i class=\"c3\">n. </i><i class=\"c11\">s#S</i><i class=\"c10\">$$</i><i class=\"c3\">$ </i><i class=\"c14\">`</i><i class=\"c15\">\"</i><i class=\"c14\">\":</i><i class=\"c15\">::::</i><i class=\"c0\">: </i><i class=\"c5\">:</i><i class=\"c13\">,</i><i class=\"c5\">$</i>", "<i class=\"c15\"> </i><i class=\"c6\">| </i><i class=\"c14\">:</i><i class=\"c15\">::</i><i class=\"c0\">: </i><i class=\"c11\">$$</i><i class=\"c10\">$$$</i><i class=\"c3\">$</i><i class=\"c11\">_,$</i><i class=\"c10\">$</i><i class=\"c3\">$S'</i><i class=\"c14\">rE</i><i class=\"c11\">.g#</i><i class=\"c10\">S$$</i><i class=\"c3\">$ </i><i class=\"c11\">$$</i><i class=\"c10\">$$$$ss</i><i class=\"c3\">n    </i><i class=\"c11\">$$</i><i class=\"c10\">$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$</i><i class=\"c3\">$$$ </i><i class=\"c11\">$$</i><i class=\"c10\">$$$$</i><i class=\"c11\">\"$</i><i class=\"c10\">$S#</i><i class=\"c3\">n.</i><i class=\"c14\">`:</i><i class=\"c0\">:'</i><i class=\"c13\">,$</i><i class=\"c5\">$</i>", "<i class=\"c15\"></i><i class=\"c13\">_</i><i class=\"c6\">,L</i><i class=\"c14\">`:</i><i class=\"c15\">:</i><i class=\"c0\">: </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$</i><i class=\"c11\">`\"$</i><i class=\"c10\">$SSn</i><i class=\"c3\">. </i><i class=\"c11\">$$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">gg#</i><i class=\"c10\">S</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">ggg</i><i class=\"c10\">gg</i><i class=\"c3\">n </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c14\">:</i><i class=\"c0\">: </i><i class=\"c13\">$</i><i class=\"c6\">$</i><i class=\"c5\">$</i>", "<i class=\"c15\"></i><i class=\"c13\">`\"$</i><i class=\"c5\">n</i><i class=\"c14\">\":</i><i class=\"c0\">: </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$  </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c14\">:</i><i class=\"c0\">: </i><i class=\"c13\">$</i><i class=\"c6\">$</i><i class=\"c5\">$</i>", "<i class=\"c15\"> </i><i class=\"c13\">$$</i><i class=\"c6\">'</i><i class=\"c5\">L</i><i class=\"c14\">:</i><i class=\"c0\">: </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">,$</i><i class=\"c10\">$$$</i><i class=\"c3\">$$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$</i><i class=\"c3\">$$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$$</i><i class=\"c3\">$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$</i><i class=\"c3\">$$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$</i><i class=\"c3\">$$ </i><i class=\"c11\">$</i><i class=\"c10\">$$$</i><i class=\"c3\">$$ </i><i class=\"c14\">:</i><i class=\"c0\">: </i><i class=\"c13\">$</i><i class=\"c6\">$</i><i class=\"c5\">$</i>", "<i class=\"c15\"> </i><i class=\"c13\">$</i><i class=\"c5\">$</i><i class=\"c6\">.</i><i class=\"c5\">\"</i><i class=\"c14\">:</i><i class=\"c0\">: </i><i class=\"c11\">$</i><i class=\"c10\">$$$$$ss$$$</i><i class=\"c3\">$S' </i><i class=\"c11\">$</i><i class=\"c10\">$$$</i><i class=\"c3\">$$$ </i><i class=\"c11\">`S</i><i class=\"c10\">$$$$s$$</i><i class=\"c3\">$S' </i><i class=\"c11\">`S</i><i class=\"c10\">$$$$s$$$</i><i class=\"c3\">$S' </i><i class=\"c11\">$</i><i class=\"c10\">$$</i><i class=\"c3\">$$$ </i><i class=\"c11\">$</i><i class=\"c10\">$$</i><i class=\"c3\">$$$ </i><i class=\"c14\">:</i><i class=\"c0\">: </i><i class=\"c13\">$</i><i class=\"c6\">$</i><i class=\"c5\">$</i>", "<i class=\"c15\"> </i><i class=\"c13\">$</i><i class=\"c6\">$</i><i class=\"c5\">. </i><i class=\"c14\">:</i><i class=\"c0\">:.</i><i class=\"c15\">............</i><i class=\"c14\">.:</i><i class=\"c0\">:           </i><i class=\"c14\">.</i><i class=\"c15\">....</i><i class=\"c0\">. </i><i class=\"c9\">B</i><i class=\"c3\">itch</i><i class=\"c9\">X </i><i class=\"c0\">b</i><i class=\"c15\">y </i><i class=\"c11\">P</i><i class=\"c10\">anasync</i><i class=\"c12\">! </i><i class=\"c14\">.</i><i class=\"c15\">..</i><i class=\"c0\">:</i><i class=\"c15\">.......</i><i class=\"c14\">:</i><i class=\"c0\">: </i><i class=\"c13\">$</i><i class=\"c6\">$</i><i class=\"c5\">$</i>", "<i class=\"c15\"> </i><i class=\"c13\">$</i><i class=\"c6\">$</i><i class=\"c5\">| </i><i class=\"c14\">:</i><i class=\"c15\">::::::::::::::</i><i class=\"c0\">:'          </i><i class=\"c14\">.:</i><i class=\"c15\">:::::::::::</i><i class=\"c0\">:.           </i><i class=\"c14\">:</i><i class=\"c15\">:::::::::::::</i><i class=\"c0\">:'</i><i class=\"c13\">.</i><i class=\"c6\">$$</i><i class=\"c5\">$</i>", "<i class=\"c15\"> </i><i class=\"c13\">$</i><i class=\"c6\">$</i><i class=\"c5\">l.</i><i class=\"c14\">`:</i><i class=\"c15\">:::::::::::</i><i class=\"c0\">:'          </i><i class=\"c14\">.:</i><i class=\"c15\">:</i><i class=\"c0\">:'</i><i class=\"c14\">\":</i><i class=\"c15\">::::::::::</i><i class=\"c0\">:.          </i><i class=\"c14\">`:</i><i class=\"c15\">:::::::::::</i><i class=\"c0\">: </i><i class=\"c13\">l</i><i class=\"c6\">$$</i><i class=\"c5\">$</i>", "<i class=\"c15\"> </i><i class=\"c13\">$</i><i class=\"c6\">$$</i><i class=\"c5\">l </i><i class=\"c14\">`:</i><i class=\"c15\">::::::::</i><i class=\"c0\">:'          </i><i class=\"c14\">.:</i><i class=\"c15\">:::</i><i class=\"c0\">: </i><i class=\"c5\">|</i><i class=\"c14\">`:</i><i class=\"c15\">:::::::::::</i><i class=\"c0\">:.          </i><i class=\"c14\">`:</i><i class=\"c15\">::::::::</i><i class=\"c0\">:'</i><i class=\"c13\">,$</i><i class=\"c6\">$</i><i class=\"c5\">$$</i>", "<i class=\"c15\"> </i><i class=\"c13\">$</i><i class=\"c6\">$S</i><i class=\"c5\">$s,._</i><i class=\"c14\">`\"\":</i><i class=\"c15\">:</i><i class=\"c0\">:'           </i><i class=\"c14\">:</i><i class=\"c15\">:::</i><i class=\"c0\">:'</i><i class=\"c13\">_a</i><i class=\"c6\">l</i><i class=\"c5\">-</i><i class=\"c14\">`:</i><i class=\"c15\">::::::::::::</i><i class=\"c0\">:           </i><i class=\"c14\">`:</i><i class=\"c15\">::</i><i class=\"c0\">:\"\"'</i><i class=\"c13\">,S$</i><i class=\"c6\">$</i><i class=\"c5\">$$$</i>", "<i class=\"c15\"> </i><i class=\"c13\">$</i><i class=\"c6\">$$S$$$</i><i class=\"c5\">$$SS#ss,.__         </i><i class=\"c14\">`\":</i><i class=\"c15\">:</i><i class=\"c0\">:</i><i class=\"c13\">`$</i><i class=\"c6\">$</i><i class=\"c5\">s.</i><i class=\"c6\">_</i><i class=\"c5\">_</i><i class=\"c14\">`\":</i><i class=\"c15\">:::::</i><i class=\"c0\">:\"</i><i class=\"c15\">'  </i><i class=\"c13\">__</i><i class=\"c6\">_.</i><i class=\"c13\">,</i><i class=\"c6\">,,</i><i class=\"c13\">ss</i><i class=\"c6\">s##SSSS$$$$</i><i class=\"c5\">$S\"`</i>", "<i class=\"c15\"> </i><i class=\"c13\">`\"</i><i class=\"c6\">S$$$$$$$$$$$$$$$$$$$$$$$$$SSSSSS</i><i class=\"c5\">$'</i><i class=\"c6\">~\"\"\"\"\"\"\"\"\"~~~~~~~~\"\"\"\"\"\"\"\"\"\"\"\"```</i><i class=\"c5\">```'</i><i class=\"c15\"></i>"], ["<i class=\"c15\">                    :                            :</i>", "<i class=\"c15\">                 ::::::::::                ::::::::::</i>", "<i class=\"c15\">                 :  :    _:______    ______:_    :  :</i>", "<i class=\"c15\">                 ::::  _\\       \\  /       /    ::::</i>", "<i class=\"c15\">                         _ ___  _ \\/_      /__ _______</i>", "<i class=\"c15\">     :::::::::  _________/\\___/\\__  /__ _____/\\__    /  ::::::::::</i>", "<i class=\"c15\">     :         \\_____   ___  __   _________   __   /_           :</i>", "<i class=\"c15\">     : :::  .     /  /____/   /   /___/    /___/  ___ \\    . ::: :</i>", "<i class=\"c15\">     : : :  :   _/  /_   \\   /       //   /   /   /   /    : : : :</i>", "<i class=\"c15\">     :::::  |  \\_____  /___/\\___  /\\____  /___/   /     | :::::</i>", "<i class=\"c15\">       :    +------- \\/ ------- \\/ ---- \\/ - /___// ----+   :</i>", "<i class=\"c15\">       :         :::::  //_______/  \\_______\\_ :::::          :</i>", "<i class=\"c15\">       :             :    :                :    :              :</i>", "<i class=\"c15\">                  [ b i t c h  X  i r c  c l i e n t ]</i>", "<i class=\"c15\">                     :    :   by panasync  :    :</i>", "<i class=\"c15\">                     ::::::::::        ::::::::::</i>", "<i class=\"c15\">                          :   :[blaze] :   :</i>", "<i class=\"c15\">                          :::::        :::::</i>"], ["<i class=\"c15\">        </i><i class=\"c13\">________</i><i class=\"c15\">         </i><i class=\"c14\">   </i><i class=\"c13\">________ </i><i class=\"c15\">        </i><i class=\"c13\">________</i><i class=\"c14\"> </i><i class=\"c15\">   </i><i class=\"c14\"> </i><i class=\"c15\">    </i><i class=\"c13\">________</i>", "<i class=\"c15\"></i><i class=\"c15\">        </i><i class=\"c13\">\\</i><i class=\"c15\">      </i><i class=\"c13\">//___________\\</i><i class=\"c15\">      </i><i class=\"c13\">/________\\\\</i><i class=\"c15\">      </i><i class=\"c13\">/_________\\_</i><i class=\"c15\">     </i><i class=\"c13\">//</i>", "<i class=\"c15\"></i><i class=\"c15\">      </i><i class=\"c13\">___</i><i class=\"c6\">\\</i><i class=\"c15\"> </i><i class=\"c14\"> </i><i class=\"c15\"> </i><i class=\"c14\"> </i><i class=\"c6\">___</i><i class=\"c15\">   </i><i class=\"c6\">_________</i><i class=\"c14\"> </i><i class=\"c15\">    </i><i class=\"c6\">__</i><i class=\"c15\">     </i><i class=\"c6\">_______</i><i class=\"c15\">        </i><i class=\"c14\"> </i><i class=\"c6\">\\</i><i class=\"c15\">     </i><i class=\"c6\">/</i><i class=\"c15\">    </i><i class=\"c6\">/</i>", "<i class=\"c15\"></i><i class=\"c15\">        </i><i class=\"c6\">&lt;&lt;_____</i><i class=\"c14\"> </i><i class=\"c15\">    </i><i class=\"c6\">\\</i><i class=\"c14\"> </i><i class=\"c15\">    </i><i class=\"c14\"> </i><i class=\"c6\">/</i><i class=\"c15\">      </i><i class=\"c6\">&gt; </i><i class=\"c15\">    </i><i class=\"c6\">\\</i><i class=\"c15\">   </i><i class=\"c14\"> </i><i class=\"c15\"> </i><i class=\"c6\">/____\\</i><i class=\"c14\">  </i><i class=\"c15\">   </i><i class=\"c6\">&gt;&gt;</i><i class=\"c15\">        </i><i class=\"c6\">\\</i><i class=\"c13\"> ___</i>", "<i class=\"c15\"></i><i class=\"c15\">      </i><i class=\"c14\">____</i><i class=\"c15\">    </i><i class=\"c14\">/______\\_____&lt;&lt;_____//___________&gt;&gt;  /_______\\</i><i class=\"c15\">   </i><i class=\"c14\">/_____&gt;&gt;sm</i>", "<i class=\"c15\"></i><i class=\"c15\">        </i><i class=\"c14\">&lt;&lt;___________</i><i class=\"c15\">       </i><i class=\"c14\">  </i><i class=\"c15\"> bitchx by panasync       </i><i class=\"c14\"> /______\\\\</i><i class=\"c15\">   </i><i class=\"c14\">____</i>", "<i class=\"c15\"></i><i class=\"c15\">                    </i><i class=\"c14\">/------------------------------------------------\\\\</i>", "<i class=\"c15\"></i>", "<i class=\"c15\"></i>"]] ;
+
+function pickLogo() { return LOGOS[Math.floor(Math.random() * LOGOS.length)]; }
+
+// =================== init ===================
+
+async function init() {
+  // load network selection first so all per-network storage keys resolve correctly
+  migrateLegacyStorage();
+  state.mode = sessionStorage.getItem('bx2:mode') === 'eliza' ? 'eliza' : 'normal';
+  state.network = ls.get('network', 'efnet');
+  if (!NETWORKS[state.network]) state.network = 'efnet';
+
+  state.buffers.push(makeServerBuffer());
+
+  state.nick = ls.get('nick', null);
+  if (!state.nick) {
+    state.nick = (prompt('Pick a nickname (max 9 chars, late-90s style):', 'guest' + rand(100, 999)) || ('guest' + rand(100, 999))).slice(0, 9);
+    ls.set('nick', state.nick);
+  }
+
+  // Fresh start on every reload: wipe all per-channel state. Keeps nick,
+  // network, and lastChannel so we can auto-rejoin where we were.
+  const rememberChannel = ls.get('lastChannel', null);
+  wipeChannelStorage();
+
+  redrawBuffer();
+
+  // banner / MOTD always rendered on the server buffer at index 0
+  state.buffers[0].transcript = [];
+  persistBuffer(state.buffers[0]);
+  if (state.currentIdx === 0) $sb.innerHTML = '';
+  const logo = pickLogo();
+  for (const lineHtml of logo) emit(state.buffers[0], { kind: 'logo', html: lineHtml });
+  // Full server connection sequence: hostname/ident lookup, RFC numerics
+  // 001-005 (welcome, host, created, MYINFO, ISUPPORT), 251-266 (user/oper
+  // /channel stats), then the per-network MOTD body bracketed by
+  // MOTDSTART / ENDOFMOTD. ELIZA fallback keeps its custom MOTD instead.
+  if (state.mode === 'eliza') {
+    // ELIZA fallback: a synthesised MIT AI Lab 1966 connection sequence,
+    // followed by the fallback MOTD that explains why this mode is active.
+    const elizaHandshake = [
+      '*** Looking up your hostname...',
+      '*** Found your hostname',
+      `*** Welcome to the M.I.T. AI Lab Time-Sharing System ${state.nick}!${fakeHost(state.nick)}`,
+      '*** Your host is M.I.T. AI Lab, running DOCTOR.SCRIPT 1.0',
+      '*** This server was created Sat Jan  1 09:30:00 1966',
+      '*** M.I.T. PDP-6 DOCTOR.SCRIPT-1.0 i ntr',
+      '*** NETWORK=ELIZA NICKLEN=8 CHANTYPES=# CASEMAPPING=ascii :are supported by this server',
+      '*** There is 1 user and 0 invisible on 1 server',
+      '*** 1 :IRC Operators online (ELIZA)',
+      '*** 0 :unknown connection(s)',
+      '*** 1 :channels formed',
+      '*** I have 1 clients and 1 servers',
+      '*** Current local users: 1  Max: 1',
+      '*** Current global users: 1  Max: 1',
+      '*** - M.I.T. AI Lab Message of the Day -'
+    ];
+    for (const line of elizaHandshake) {
+      emit(state.buffers[0], { ts: hhmm24(), kind: 'motd', text: line });
+    }
+    for (const line of ELIZA_MOTD) {
+      emit(state.buffers[0], { ts: hhmm24(), kind: 'motd', text: line });
+    }
+    emit(state.buffers[0], { ts: hhmm24(), kind: 'motd', text: '*** End of /MOTD command.' });
+  } else {
+    const handshake = serverHandshake(currentNet(), state.nick);
+    for (const line of handshake) {
+      emit(state.buffers[0], { ts: hhmm24(), kind: 'motd', text: line });
+    }
+    for (const line of currentNet().motd) {
+      emit(state.buffers[0], { ts: hhmm24(), kind: 'motd', text: line });
+    }
+    for (const line of serverEndOfMotd()) {
+      emit(state.buffers[0], { ts: hhmm24(), kind: 'motd', text: line });
+    }
+  }
+  emit(state.buffers[0], { ts: hhmm24(), kind: 'info', text: `*** Your nickname is ${state.nick}` });
+  emit(state.buffers[0], { ts: hhmm24(), kind: 'info', text: `*** Mode change "+i" for user ${state.nick} by ${state.nick}` });
+  emit(state.buffers[0], { ts: hhmm24(), kind: 'info', text: `connected to ${currentNet().name}. type /help for commands, /list for channels, /server to switch networks, /music on for sinny - sky sunday.` });
+
+  try { await ensureLLM(); console.info('on-device model ready'); }
+  catch (err) { console.warn('on-device model init failed:', err.message); }
+
+  resetIdleTimer();
+  scheduleBackgroundEvent();
+  $inp.focus();
+
+  // Auto-join the most recent channel (or #2600 default). In ELIZA fallback
+  // mode we always land in #love alongside her, regardless of any saved
+  // lastChannel from before fallback was enabled.
+  const autoTarget = state.mode === 'eliza' ? '#love' : (rememberChannel || '#2600');
+  try {
+    if (state.mode === 'eliza') {
+      // ELIZA mode: drop the user straight into #love with her.
+      await joinChannel(autoTarget);
+    } else {
+      // Regular IRC: create the channel buffer silently in the background so
+      // the welcome / stats / MOTD on the server buffer stay on-screen and
+      // do not get briefly clobbered by 'Joining #chan...' flickering past.
+      await joinChannel(autoTarget, { switchTo: false });
+      const serverBufferIdx = state.buffers.findIndex(b => b.type !== 'channel');
+      if (serverBufferIdx >= 0) {
+        const hint = `*** auto-joined ${autoTarget} (press Alt+2 or /window 2 to enter)`;
+        emit(state.buffers[serverBufferIdx], { ts: hhmm24(), kind: 'info', text: hint });
+      }
+    }
+  }
+  catch (err) { sysToCurrent(`auto-join ${autoTarget} failed: ${err.message}`, 'err'); }
+}
+
+let _switchingNetwork = false;
+window.addEventListener('beforeunload', () => { if (!_switchingNetwork) persistAll(); });
+
+
+// =================== focus management ===================
+// The input prompt should always reclaim focus unless the user is actively
+// selecting text in the scrollback.
+document.addEventListener('mouseup', () => {
+  const sel = window.getSelection();
+  if (!sel || sel.toString().length === 0) {
+    setTimeout(() => $inp.focus(), 0);
+  }
+});
+document.addEventListener('keydown', (e) => {
+  if (document.activeElement === $inp) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  // any printable key or Backspace returns focus to the input
+  if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Enter') {
+    $inp.focus();
+  }
+});
+window.addEventListener('focus', () => $inp.focus());
+
+// =================== preflight: Chrome + LanguageModel availability ===================
+
+async function checkRequirements() {
+  const ua = navigator.userAgent;
+  const m = ua.match(/Chrome\/(\d+)/);
+  const chromeVer = m ? parseInt(m[1]) : 0;
+  // exclude Firefox (which doesn't have Chrome/ in UA anyway), and explicitly
+  // exclude Edge / Opera which are Chromium-based but don't ship the Prompt API
+  // origin trial token machinery in the same way.
+  const isChromium = chromeVer > 0;
+  const isPureChrome = isChromium && !/Edg\/|OPR\//.test(ua);
+  const isMobile = /Mobile|Android|iPhone|iPad|iPod/i.test(ua);
+  const isDesktop = !isMobile;
+  const hasLMAPI = typeof LanguageModel !== 'undefined';
+  let lmAvailable = null;
+  if (hasLMAPI) {
+    try {
+      lmAvailable = await LanguageModel.availability({ expectedInputs: [{ type: 'text' }] });
+    } catch (e) {
+      lmAvailable = 'error: ' + (e.message || e);
+    }
+  }
+  const lmReady = lmAvailable === 'available' || lmAvailable === 'downloadable' || lmAvailable === 'after-download';
+  return {
+    ua, chromeVer, isChromium, isPureChrome, isDesktop, isMobile,
+    hasLMAPI, lmAvailable, lmReady,
+    allOK: isChromium && chromeVer >= 128 && isDesktop && hasLMAPI && lmReady
+  };
+}
+
+function renderRequirementsScreen(check) {
+  $sb.innerHTML = '';
+  const mark = (cond) => cond ? '<span class="ok">[X]</span>' : '<span class="err">[ ]</span>';
+  const lines = [
+    '',
+    '<span class="ev-key">============================================================</span>',
+    '<span class="ev-key">       BitchX-1.1-final pre-flight requirements</span>',
+    '<span class="ev-key">============================================================</span>',
+    '',
+    `  ${mark(check.isChromium)} Chrome / Chromium browser <span class="dim">(detected: ${check.isChromium ? 'yes, build ' + check.chromeVer : 'no'})</span>`,
+    `  ${mark(check.chromeVer >= 128)} Chrome 128 or newer <span class="dim">(you have: ${check.chromeVer || 'unknown'})</span>`,
+    `  ${mark(check.isDesktop)} Desktop platform <span class="dim">(detected: ${check.isDesktop ? 'desktop' : 'mobile - the Prompt API does not ship on Android Chrome yet'})</span>`,
+    `  ${mark(check.hasLMAPI)} window.LanguageModel API present <span class="dim">(the Prompt API)</span>`,
+    `  ${mark(check.lmReady)} On-device Gemini Nano model ready <span class="dim">(status: ${check.lmAvailable || 'n/a'})</span>`,
+    '',
+    '<span class="ev-key">------------------------------------------------------------</span>',
+    '<span class="ev-key">How to enable the Prompt API:</span>',
+    '',
+    '  1. Use Chrome 128 or newer on a desktop platform.',
+    '  2. Open <span class="ev-arg">chrome://flags</span>',
+    '  3. Enable <span class="ev-val">"Prompt API for Gemini Nano"</span>',
+    '  4. Enable <span class="ev-val">"Prompt API for Gemini Nano with Multimodal Input"</span>',
+    '  5. Restart Chrome.',
+    '  6. Open <span class="ev-arg">chrome://components</span>',
+    '  7. Find <span class="ev-val">"Optimization Guide On Device Model"</span> and click "Check for update".',
+    '  8. Wait for the ~3GB model to download.',
+    '  9. Refresh this page.',
+    '',
+    'If you do not have an origin-trial token for this domain, the API may also',
+    'be gated. Origin trials: https://developer.chrome.com/origintrials',
+    '',
+    '<span class="ev-key">------------------------------------------------------------</span>',
+    `  <span class="dim">UA: ${esc(check.ua)}</span>`,
+    '',
+    '  <span class="ok" id="eliza-mode" style="cursor:pointer; text-decoration:underline; font-weight:bold;">[ Continue to #love with ELIZA - works on mobile, no Prompt API needed ]</span>',
+    '',
+    '  <span class="dim" id="try-anyway" style="cursor:pointer; text-decoration:underline;">[ or: open the regular UI with fallback personas (no LLM responses) ]</span>',
+    ''
+  ];
+  for (const line of lines) {
+    appendLine(line);
+  }
+  const btn = document.getElementById('try-anyway');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      sessionStorage.removeItem('bx2:mode');
+      sessionStorage.setItem('bx2:skip_preflight', '1');
+      location.reload();
+    });
+  }
+  const elizaBtn = document.getElementById('eliza-mode');
+  if (elizaBtn) {
+    elizaBtn.addEventListener('click', () => {
+      sessionStorage.setItem('bx2:mode', 'eliza');
+      sessionStorage.setItem('bx2:skip_preflight', '1');
+      location.reload();
+    });
+  }
+}
+
+async function bootstrap() {
+  const skip = sessionStorage.getItem('bx2:skip_preflight') === '1';
+  if (!skip) {
+    try {
+      const check = await checkRequirements();
+      if (!check.allOK) {
+        renderRequirementsScreen(check);
+        return;
+      }
+    } catch (err) {
+      // checkRequirements itself blew up. Render anyway with an error marker.
+      renderRequirementsScreen({ ua: navigator.userAgent, chromeVer: 0, isChromium: false, isDesktop: false, hasLMAPI: false, lmAvailable: 'error: ' + err.message, lmReady: false, allOK: false });
+      return;
+    }
+  }
+  await init();
+}
+
+bootstrap().catch(err => {
+  console.error(err);
+  appendLine(`<span class="err">fatal: ${esc(err.message || err)}</span>`);
+});
+
+})();
+</script>
+</body>
+</html>
